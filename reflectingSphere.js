@@ -262,6 +262,16 @@ window.onload = function init() {
     gl.uniform4fv( gl.getUniformLocation(program,"lightPosition"), flatten(lightPosition) );
     gl.uniform1f( gl.getUniformLocation(program, "shininess"), materialShininess );
 
+    let fish = new Model(
+        "Fish/12265_Fish_v1_L2.obj",
+        "Fish/12265_Fish_v1_L2.mtl"
+    )
+
+    let chair = new Model(
+        "Chair/Chair.obj",
+        "Chair/Chair.mtl"
+    )
+
     // Default textures
     configureDefaultTexture();
     configureDefaultCubeMap();
