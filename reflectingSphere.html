@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+
+<script id="vertex-shader" type="x-shader/x-vertex">
+
+attribute vec4 vPosition, vNormal;
+attribute vec2 vTexCoord;
+uniform mat4 modelMatrix;
+uniform mat4 cameraMatrix;
+uniform mat4 cameraInverseMatrix;
+uniform mat4 projectionMatrix;
+varying vec3 pos, N;
+varying vec2 fTexCoord;
+varying vec3 viewDirWorld, N_world;
+uniform bool isSkybox;
+
+void main()
+{
+    if(!isSkybox) {
+        // Calculate L
+        vec4 nm = vNormal;
+        nm.w = 1.0;     //To calculate the lighting vector, we need to convert the normal position
+        pos = (cameraMatrix * nm).xyz;
+
+        // Calculate N
+        //Here, we need to convert the normal direction (not the position)
+        N = normalize(cameraMatrix * vNormal).xyz;
+
+        // Camera position in eye coordinates is vec4(0.0, 0.0, 0.0, 1.0),
+        // and we multiply by viewMatrixInverse to get the position in world coordinates
+        vec3 camPosWorld = (cameraInverseMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+
+        // The view vector (in world coordinates)
+        viewDirWorld = vPosition.xyz - camPosWorld;
+
+        // The surface normal (in world coordinates)
+        N_world = normalize(vNormal).xyz;
+
+        gl_Position = projectionMatrix * cameraMatrix * vPosition;
+    }
+    else {
+        fTexCoord = vTexCoord;
+        gl_Position = projectionMatrix * cameraMatrix * modelMatrix * vPosition;
+    }
+}
+</script>
+
+<script id="fragment-shader" type="x-shader/x-fragment">
+
+precision mediump float;
+
+uniform vec4 ambientProduct, diffuseProduct, specularProduct;
+uniform float shininess;
+varying vec3 pos, N;
+varying vec2 fTexCoord;
+varying vec3 viewDirWorld, N_world;
+uniform vec4 lightPosition;
+uniform samplerCube texMap;
+uniform sampler2D tex1;
+uniform bool isSkybox;
+
+void main()
+{
+    if(!isSkybox) {
+        vec3 L = normalize(lightPosition.xyz - pos);
+
+        //Specular
+        //V = origin - pos = -pos
+        vec3 V = normalize(-pos);
+
+        //Diffuse
+        //Id = Ld kd dot(l • n)
+        vec4 diffuse = diffuseProduct * max(dot(L, N), 0.0);
+
+        //Specular
+        //r = (2 (l · n ) n) - l
+        vec3 R = 2.0 * (dot(L, N) * N) - L;
+
+        //Is = Ls Ks dot(V, R)^a
+        vec4 specular = specularProduct * pow(max(dot(V, R), 0.0), shininess);
+
+        //Ambient
+        //Ia = Laka
+        vec4 ambient = ambientProduct;
+
+        vec4 fColor = diffuse + specular + ambient;
+        fColor.a = 1.0;
+
+        vec3 refl = reflect(viewDirWorld, N_world);
+        vec4 texColor = textureCube(texMap, refl);
+        gl_FragColor = 0.5 * fColor +  0.5 * texColor;
+    }
+    else {
+        gl_FragColor = texture2D(tex1, fTexCoord);
+    }
+
+}
+</script>
+
+
+<script type="text/javascript" src="lib/webgl-utils.js"></script>
+<script type="text/javascript" src="lib/initShaders.js"></script>
+
+<script type="text/javascript" src="lib/MV.js"></script>
+<script type="text/javascript" src="reflectingSphere.js"></script>
+
+<body>
+<canvas id="gl-canvas" width="512" height="512">
+Oops ... your browser doesn't support the HTML5 canvas element
+</canvas>
+</body>
+</html>
