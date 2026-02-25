@@ -269,7 +269,7 @@ window.onload = function init() {
     // Load the image
     let image = new Image();
     image.crossOrigin = "anonymous";
-    image.src = "images/Concrete_Floor_CF_Texture.png";
+    image.src = "images/Shanty_Wall_PG_Texture.png";
     image.onload = function() {
         configureTexture(image);
         configureCubeMap(image);
