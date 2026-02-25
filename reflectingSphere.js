@@ -12,6 +12,7 @@ let pointsArrayCube = [];
 let cameraMatrixLoc, cameraInverseMatrixLoc;
 let vTexCoord, vNormal, vPosition;
 
+let rotateScene = false;
 
 function quad(a, b, c, d) {
     let minT = 0.0;
@@ -271,8 +272,8 @@ window.onload = function init() {
 
     // Load the image
     let image = new Image();
-    image.crossOrigin = "";
-    image.src = "https://webglfundamentals.org/webgl/resources/f-texture.png";
+    image.crossOrigin = "anonymous";
+    image.src = "images/Shanty_Wall_PG_Texture.png";
     image.onload = function() {
         configureTexture(image);
         configureCubeMap(image);
@@ -308,7 +309,18 @@ window.onload = function init() {
     let modelMatrixLoc = gl.getUniformLocation( program, "modelMatrix" );
     gl.uniformMatrix4fv(modelMatrixLoc, false, flatten(modelMatrix) );
 
+    window.addEventListener("keydown", handleKeyPress);
+
     render();
+}
+
+
+function handleKeyPress(e) {
+    switch(e.key) {
+        //Increment and decrement object subdivisions respectively
+        case "r":
+            rotateScene = !rotateScene
+    }
 }
 
 
@@ -353,7 +365,8 @@ function render() {
     let at = vec3(0.0, 0.0, 0.0);
     let up = vec3(0.0, 1.0, 0.0);
 
-    alpha += 0.005;
+    if (rotateScene)
+        alpha += 0.005;
 
     let cameraMatrix = lookAt(eye, at, up);
     gl.uniformMatrix4fv(cameraMatrixLoc, false, flatten(cameraMatrix) );
