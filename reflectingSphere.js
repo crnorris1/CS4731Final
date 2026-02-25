@@ -313,7 +313,7 @@ window.onload = function init() {
 
 function handleKeyPress(e) {
     switch(e.key) {
-        //Increment and decrement object subdivisions respectively
+        //Toggle scene spinning
         case "r":
             rotateScene = !rotateScene
     }
