@@ -321,7 +321,14 @@ window.onload = function init() {
 
     window.addEventListener("keydown", handleKeyPress);
 
-    render();
+    tick();
+}
+
+function tick() {
+    if (fish.objParsed && fish.mtlParsed && chair.objParsed && chair.mtlParsed) {
+        render();
+    }
+    requestAnimationFrame(tick);
 }
 
 
@@ -363,7 +370,6 @@ function drawSkybox() {
     gl.vertexAttribPointer(vPosition, 4, gl.FLOAT, false, 0, 0);
     gl.drawArrays( gl.TRIANGLES, 0, pointsArrayCube.length );
 }
-
 
 let alpha = 0;
 
