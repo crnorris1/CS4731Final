@@ -9,6 +9,9 @@ let texCoordsArray = [];
 let pointsArraySphere = [];
 let pointsArrayCube = [];
 
+let fish;
+let chair;
+
 let cameraMatrixLoc, cameraInverseMatrixLoc;
 let vTexCoord, vNormal, vPosition;
 
@@ -252,6 +255,17 @@ window.onload = function init() {
     let materialSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
     let materialShininess = 20.0;
 
+    // create model instances after shader program is ready
+    fish = new Model(
+        "Fish/12265_Fish_v1_L2.obj",
+        "Fish/12265_Fish_v1_L2.mtl"
+    );
+
+    chair = new Model(
+        "Chair/Chair.obj",
+        "Chair/Chair.mtl"
+    );
+
     let ambientProduct = mult(lightAmbient, materialAmbient);
     let diffuseProduct = mult(lightDiffuse, materialDiffuse);
     let specularProduct = mult(lightSpecular, materialSpecular);
@@ -261,16 +275,6 @@ window.onload = function init() {
     gl.uniform4fv( gl.getUniformLocation(program,"specularProduct"), flatten(specularProduct) );
     gl.uniform4fv( gl.getUniformLocation(program,"lightPosition"), flatten(lightPosition) );
     gl.uniform1f( gl.getUniformLocation(program, "shininess"), materialShininess );
-
-    let fish = new Model(
-        "Fish/12265_Fish_v1_L2.obj",
-        "Fish/12265_Fish_v1_L2.mtl"
-    )
-
-    let chair = new Model(
-        "Chair/Chair.obj",
-        "Chair/Chair.mtl"
-    )
 
     // Default textures
     configureDefaultTexture();
