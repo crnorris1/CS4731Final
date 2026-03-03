@@ -364,6 +364,10 @@ function drawSkybox() {
     gl.enableVertexAttribArray(vTexCoord);
     gl.disableVertexAttribArray( vNormal);
 
+    let modelMatrix = scalem(4, 4, 4);
+    let modelMatrixLoc = gl.getUniformLocation( program, "modelMatrix" );
+    gl.uniformMatrix4fv(modelMatrixLoc, false, flatten(modelMatrix) );
+
     gl.uniform1i(gl.getUniformLocation(program, "isSkybox"), 1);
     gl.uniform1i(gl.getUniformLocation(program, "isFish"), 0);
     
@@ -386,18 +390,8 @@ function drawFish() {
         return;
     }
 
-    let modelMatrix = rotateX(270);
-    let aspect = canvas.width / canvas.height;
-    let projectionMatrix = perspective(45, aspect, 0.1, 1000.0);
+    let modelMatrix = mult( rotateX(270), scalem(0.05, 0.05, 0.05));
 
-    // Create view matrix (camera) - moved much further back
-    let eye = vec3(0, 0, 200);
-    let at = vec3(0, 0, 0);
-    let up = vec3(0, 1, 0);
-    let viewMatrix = lookAt(eye, at, up);
-
-    gl.uniformMatrix4fv(cameraMatrixLoc, false, flatten(viewMatrix))
-    gl.uniformMatrix4fv(gl.getUniformLocation(program, "projectionMatrix"), false, flatten(projectionMatrix))
     gl.uniformMatrix4fv(gl.getUniformLocation(program, "modelMatrix"), false, flatten(modelMatrix))
 
     // Flatten face data
@@ -444,7 +438,7 @@ let alpha = 0;
 function render() {
 
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    /*
+    
 
     let eye = vec3(2 * Math.sin(alpha), 0.0, 2 * Math.cos(alpha));
     let at = vec3(0.0, 0.0, 0.0);
@@ -456,12 +450,18 @@ function render() {
     let cameraMatrix = lookAt(eye, at, up);
     gl.uniformMatrix4fv(cameraMatrixLoc, false, flatten(cameraMatrix) );
     gl.uniformMatrix4fv(cameraInverseMatrixLoc, false, flatten(inverse(cameraMatrix)) );
-    */
+    
 
     //drawSphere();
-    //drawSkybox();
-
     drawFish();
+
+gl.depthMask(false);
+gl.depthFunc(gl.LEQUAL);
+
+drawSkybox();
+
+gl.depthMask(true);
+gl.depthFunc(gl.LESS);
 
     requestAnimFrame(render);
 }
