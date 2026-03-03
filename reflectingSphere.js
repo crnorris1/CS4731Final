@@ -9,11 +9,18 @@ let texCoordsArray = [];
 let pointsArraySphere = [];
 let pointsArrayCube = [];
 
+let fishPos = [];
+let fishNormal = [];
+let fishTexCoords = [];
+let fishColors = [];
+
 let fish;
 let chair;
 
 let cameraMatrixLoc, cameraInverseMatrixLoc;
 let vTexCoord, vNormal, vPosition;
+
+let vBuffer
 
 let rotateScene = false;
 
@@ -309,6 +316,8 @@ window.onload = function init() {
     gl.vertexAttribPointer( vNormal, 4, gl.FLOAT, false, 0, 0 );
     gl.enableVertexAttribArray( vNormal);
 
+    vBuffer = gl.createBuffer();
+
     // We don't need to re-enable vPosition every time we want to use it,
     // so we'll just enable it once for better performance
     vPosition = gl.getAttribLocation( program, "vPosition");
@@ -351,7 +360,6 @@ function drawSphere() {
     gl.uniform1i(gl.getUniformLocation(program, "isFish"), 0);
     
 
-    let vBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, flatten(pointsArraySphere), gl.STATIC_DRAW);
     gl.vertexAttribPointer(vPosition, 4, gl.FLOAT, false, 0, 0);
@@ -372,7 +380,6 @@ function drawSkybox() {
     gl.uniform1i(gl.getUniformLocation(program, "isFish"), 0);
     
     
-    let vBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, flatten(pointsArrayCube), gl.STATIC_DRAW);
     gl.vertexAttribPointer(vPosition, 4, gl.FLOAT, false, 0, 0);
@@ -395,37 +402,40 @@ function drawFish() {
     gl.uniformMatrix4fv(gl.getUniformLocation(program, "modelMatrix"), false, flatten(modelMatrix))
 
     // Flatten face data
-    let positions = [], normals = [], texCoords = [], colors = [];
 
-    for (let face of fish.faces) {
-        let color = fish.diffuseMap.get(face.material) ?? [1, 1, 1, 1];
-        for (let i = 0; i < face.faceVertices.length; i++) {
-            positions.push(...face.faceVertices[i]);
-            colors.push(...color);
-            if (face.faceNormals.length > 0)    normals.push(...face.faceNormals[i]);
-            if (face.faceTexCoords.length > 0)  texCoords.push(...face.faceTexCoords[i]);
+    if (fishPos.length === 0 || fishColors.length === 0 || fishNormal.length === 0 || fishTexCoords === 0) {
+
+        for (let face of fish.faces) {
+            let color = fish.diffuseMap.get(face.material) ?? [1, 1, 1, 1];
+            for (let i = 0; i < face.faceVertices.length; i++) {
+                fishPos.push(...face.faceVertices[i]);
+                fishColors.push(...color);
+                if (face.faceNormals.length > 0)    fishNormal.push(...face.faceNormals[i]);
+                if (face.faceTexCoords.length > 0)  fishTexCoords.push(...face.faceTexCoords[i]);
+            }
         }
+
     }
 
-    const vertexCount = positions.length / 4;
+    const vertexCount = fishPos.length / 4;
 
     // Upload and bind position buffer
-    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
-    gl.bufferData(gl.ARRAY_BUFFER, flatten(positions), gl.STATIC_DRAW);
+    gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(fishPos), gl.STATIC_DRAW);
     let vPos = gl.getAttribLocation(program, "vPosition");
     gl.vertexAttribPointer(vPos, 4, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(vPos);
 
     // Upload and bind normal buffer
     gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
-    gl.bufferData(gl.ARRAY_BUFFER, flatten(normals), gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(fishNormal), gl.STATIC_DRAW);
     let vNorm = gl.getAttribLocation(program, "vNormal");
     gl.vertexAttribPointer(vNorm, 4, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(vNorm);
 
     // Upload and bind color buffer
     gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
-    gl.bufferData(gl.ARRAY_BUFFER, flatten(colors), gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(fishColors), gl.STATIC_DRAW);
     let vColor = gl.getAttribLocation(program, "vColor");
     gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(vColor);
