@@ -13,6 +13,7 @@ let cameraMatrixLoc, cameraInverseMatrixLoc;
 let vTexCoord, vNormal, vPosition;
 
 let rotateScene = false;
+let reflective = true;
 
 function quad(a, b, c, d) {
     let minT = 0.0;
@@ -242,12 +243,12 @@ window.onload = function init() {
     gl.uniformMatrix4fv(projectionMatrixLoc, false, flatten(projectionMatrix) );
 
     // Lighting stuff
-    let lightPosition = vec4(1.5, 1.5, 3.0, 1.0 );
-    let lightAmbient = vec4(0.2, 0.2, 0.2, 1.0 );
+    let lightPosition = vec4(0.5, 0.5, -0.5, 1.0 );
+    let lightAmbient = vec4(0.0, 0.0, 0.0, 1.0 );
     let lightDiffuse = vec4( 1.0, 1.0, 1.0, 1.0 );
     let lightSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
 
-    let materialAmbient = vec4( 1.0, 0.0, 1.0, 1.0 );
+    let materialAmbient = vec4( 0.2, 0.0, 0.0, 1.0 );
     let materialDiffuse = vec4( 1.0, 0.8, 0.0, 1.0 );
     let materialSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
     let materialShininess = 20.0;
@@ -324,7 +325,12 @@ function handleKeyPress(e) {
         //Toggle scene spinning
         case "r":
             rotateScene = !rotateScene
+            break
+        case "e":
+            reflective = !reflective
+            break
     }
+
 }
 
 
@@ -375,6 +381,8 @@ function render() {
     let cameraMatrix = lookAt(eye, at, up);
     gl.uniformMatrix4fv(cameraMatrixLoc, false, flatten(cameraMatrix) );
     gl.uniformMatrix4fv(cameraInverseMatrixLoc, false, flatten(inverse(cameraMatrix)) );
+
+    gl.uniform1i(gl.getUniformLocation(program, "isReflective"), reflective);
 
     drawSphere();
     drawSkybox();
