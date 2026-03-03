@@ -9,8 +9,12 @@ let texCoordsArray = [];
 let pointsArraySphere = [];
 let pointsArrayCube = [];
 
-let cameraMatrixLoc, cameraInverseMatrixLoc;
+let cameraMatrixLoc, cameraInverseMatrixLoc, shadowMatrixLoc;
 let vTexCoord, vNormal, vPosition;
+
+let shadowMatrix;
+let black = vec4(0.0, 0.0, 0.0, 1.0);
+let vBufferSphere;
 
 let rotateScene = false;
 let reflective = true;
@@ -271,6 +275,24 @@ window.onload = function init() {
     gl.uniform4fv( gl.getUniformLocation(program,"lightPosition"), flatten(lightPosition) );
     gl.uniform1f( gl.getUniformLocation(program, "shininess"), materialShininess );
 
+    //Shadow
+    var light = vec3(0.0, 0.0, 2.0);
+
+    let m = mat4();
+    m[3][3] = 0;
+    m[3][2] = -1/light[2];
+
+    //light = vec3(0.5, 0.5, -0.5)
+
+    shadowMatrix = mult(m, translate(-light[0], -light[1], -light[2]));
+    shadowMatrix = mult(translate(light[0], light[1], light[2]), shadowMatrix);
+    shadowMatrixLoc = gl.getUniformLocation( program, "shadowMatrix" );
+
+    vBufferSphere = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vBufferSphere);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(pointsArraySphere), gl.STATIC_DRAW);
+
+
     // Default textures
     configureDefaultTexture();
     configureDefaultCubeMap();
@@ -371,21 +393,44 @@ function render() {
 
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    let eye = vec3(2 * Math.sin(alpha), 0.0, 2 * Math.cos(alpha));
-    let at = vec3(0.0, 0.0, 0.0);
-    let up = vec3(0.0, 1.0, 0.0);
-
+    //Camera
     if (rotateScene)
         alpha += 0.005;
 
+    let eye = vec3(2 * Math.sin(alpha), 0.0, 2 * Math.cos(alpha));
+    let at = vec3(0.0, 0.0, 0.0);
+    let up = vec3(0.0, 1.0, 0.0);
     let cameraMatrix = lookAt(eye, at, up);
+    
     gl.uniformMatrix4fv(cameraMatrixLoc, false, flatten(cameraMatrix) );
     gl.uniformMatrix4fv(cameraInverseMatrixLoc, false, flatten(inverse(cameraMatrix)) );
 
+    drawSkybox();
+
+    //Shadows
+    let isShadow = true;
+    gl.uniform1i(gl.getUniformLocation(program, "isShadow"), isShadow);
+
+    let modelShadowMatrix = mult(translate(0.0, -1.99, 0.0), shadowMatrix);
+    gl.uniformMatrix4fv( shadowMatrixLoc, false, flatten(modelShadowMatrix) );    
+
+    //gl.depthMask(false)
+    //gl.drawArrays(gl.TRIANGLES, 0, pointsArraySphere.length);
+    //gl.depthMask(true)
+    //let fColor = gl.getUniformLocation(program, "fColor");
+    
+    //gl.uniform4fv(fColor, flatten(black));
+    gl.bindBuffer(gl.ARRAY_BUFFER, vBufferSphere);
+    gl.vertexAttribPointer(vPosition, 4, gl.FLOAT, false, 0, 0);
+    gl.drawArrays(gl.TRIANGLES, 0, pointsArraySphere.length);
+    
+    //!! Problem
+    isShadow = false;
+    gl.uniform1i(gl.getUniformLocation(program, "isShadow"), isShadow)
+    gl.uniformMatrix4fv(shadowMatrixLoc, false, flatten(mat4()))
     gl.uniform1i(gl.getUniformLocation(program, "isReflective"), reflective);
 
     drawSphere();
-    drawSkybox();
 
     requestAnimFrame(render);
 }
