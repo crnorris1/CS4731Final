@@ -218,7 +218,7 @@ window.onload = function init() {
     if ( !gl ) { alert( "WebGL isn't available" ); }
 
     gl.viewport( 0, 0, canvas.width, canvas.height );
-    gl.clearColor( 1.0, 1.0, 1.0, 1.0 );
+    gl.clearColor( 0.0, 0.0, 0.0, 1.0 );
 
     gl.enable(gl.DEPTH_TEST);
 
@@ -261,10 +261,12 @@ window.onload = function init() {
         "Fish/12265_Fish_v1_L2.mtl"
     );
 
+    /*
     chair = new Model(
         "Chair/Chair.obj",
         "Chair/Chair.mtl"
     );
+    */
 
     let ambientProduct = mult(lightAmbient, materialAmbient);
     let diffuseProduct = mult(lightDiffuse, materialDiffuse);
@@ -325,7 +327,7 @@ window.onload = function init() {
 }
 
 function tick() {
-    if (fish.objParsed && fish.mtlParsed && chair.objParsed && chair.mtlParsed) {
+    if (fish.objParsed && fish.mtlParsed) {
         render();
     }
     requestAnimationFrame(tick);
@@ -346,6 +348,7 @@ function drawSphere() {
     gl.enableVertexAttribArray( vNormal);
 
     gl.uniform1i(gl.getUniformLocation(program, "isSkybox"), 0);
+    gl.uniform1i(gl.getUniformLocation(program, "isFish"), 0);
     
 
     let vBuffer = gl.createBuffer();
@@ -362,6 +365,7 @@ function drawSkybox() {
     gl.disableVertexAttribArray( vNormal);
 
     gl.uniform1i(gl.getUniformLocation(program, "isSkybox"), 1);
+    gl.uniform1i(gl.getUniformLocation(program, "isFish"), 0);
     
     
     let vBuffer = gl.createBuffer();
@@ -371,11 +375,76 @@ function drawSkybox() {
     gl.drawArrays( gl.TRIANGLES, 0, pointsArrayCube.length );
 }
 
+function drawFish() {
+    // Wait for parsing to finish
+
+    gl.uniform1i(gl.getUniformLocation(program, "isFish"), 1);
+    gl.uniform1i(gl.getUniformLocation(program, "isSkybox"), 0);
+
+    if (!fish.objParsed || !fish.mtlParsed) {
+        setTimeout(() => drawFish(gl, program, model), 50);
+        return;
+    }
+
+    let modelMatrix = rotateX(270);
+    let aspect = canvas.width / canvas.height;
+    let projectionMatrix = perspective(45, aspect, 0.1, 1000.0);
+
+    // Create view matrix (camera) - moved much further back
+    let eye = vec3(0, 0, 200);
+    let at = vec3(0, 0, 0);
+    let up = vec3(0, 1, 0);
+    let viewMatrix = lookAt(eye, at, up);
+
+    gl.uniformMatrix4fv(cameraMatrixLoc, false, flatten(viewMatrix))
+    gl.uniformMatrix4fv(gl.getUniformLocation(program, "projectionMatrix"), false, flatten(projectionMatrix))
+    gl.uniformMatrix4fv(gl.getUniformLocation(program, "modelMatrix"), false, flatten(modelMatrix))
+
+    // Flatten face data
+    let positions = [], normals = [], texCoords = [], colors = [];
+
+    for (let face of fish.faces) {
+        let color = fish.diffuseMap.get(face.material) ?? [1, 1, 1, 1];
+        for (let i = 0; i < face.faceVertices.length; i++) {
+            positions.push(...face.faceVertices[i]);
+            colors.push(...color);
+            if (face.faceNormals.length > 0)    normals.push(...face.faceNormals[i]);
+            if (face.faceTexCoords.length > 0)  texCoords.push(...face.faceTexCoords[i]);
+        }
+    }
+
+    const vertexCount = positions.length / 4;
+
+    // Upload and bind position buffer
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(positions), gl.STATIC_DRAW);
+    let vPos = gl.getAttribLocation(program, "vPosition");
+    gl.vertexAttribPointer(vPos, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(vPos);
+
+    // Upload and bind normal buffer
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(normals), gl.STATIC_DRAW);
+    let vNorm = gl.getAttribLocation(program, "vNormal");
+    gl.vertexAttribPointer(vNorm, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(vNorm);
+
+    // Upload and bind color buffer
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(colors), gl.STATIC_DRAW);
+    let vColor = gl.getAttribLocation(program, "vColor");
+    gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(vColor);
+
+    gl.drawArrays(gl.TRIANGLES, 0, vertexCount);
+}
+
 let alpha = 0;
 
 function render() {
 
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    /*
 
     let eye = vec3(2 * Math.sin(alpha), 0.0, 2 * Math.cos(alpha));
     let at = vec3(0.0, 0.0, 0.0);
@@ -387,9 +456,12 @@ function render() {
     let cameraMatrix = lookAt(eye, at, up);
     gl.uniformMatrix4fv(cameraMatrixLoc, false, flatten(cameraMatrix) );
     gl.uniformMatrix4fv(cameraInverseMatrixLoc, false, flatten(inverse(cameraMatrix)) );
+    */
 
-    drawSphere();
-    drawSkybox();
+    //drawSphere();
+    //drawSkybox();
+
+    drawFish();
 
     requestAnimFrame(render);
 }
