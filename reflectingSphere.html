@@ -59,6 +59,12 @@ uniform samplerCube texMap;
 uniform sampler2D tex1;
 uniform bool isSkybox;
 
+//varying vec4 specular;
+//varying vec4 diffuse;
+
+uniform vec4 lightDiffuse, lightSpecular, lightAmbient;
+uniform vec4 materialDiffuse, materialSpecular, materialAmbient;
+
 void main()
 {
     if(!isSkybox) {
@@ -68,16 +74,27 @@ void main()
         //V = origin - pos = -pos
         vec3 V = normalize(-pos);
 
-        //Diffuse
-        //Id = Ld kd dot(l • n)
-        vec4 diffuse = diffuseProduct * max(dot(L, N), 0.0);
-
         //Specular
         //r = (2 (l · n ) n) - l
         vec3 R = 2.0 * (dot(L, N) * N) - L;
 
+        //Diffuse
+        //Id = Ld kd dot(l • n)
+        vec4 diffuse = diffuseProduct * max(dot(L, N), 0.0);
+
         //Is = Ls Ks dot(V, R)^a
         vec4 specular = specularProduct * pow(max(dot(V, R), 0.0), shininess);
+
+        vec3 lightDir = normalize(vec3(-1.0, -1.0, -2.2));
+
+        if(dot(L, -lightDir) > 0.97)
+        {
+            R = (2.0 * dot(L, N) * N) - L;
+            diffuse = lightDiffuse * materialDiffuse * dot(L, N);
+            //specular = lightSpecular * materialSpecular * pow(max(dot(V, R), 0.0), shininess);
+            specular = specularProduct * pow(max(dot(V,R), 0.0), shininess);
+        }
+
 
         //Ambient
         //Ia = Laka
