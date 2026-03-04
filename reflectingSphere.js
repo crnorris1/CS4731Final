@@ -556,8 +556,10 @@ function render() {
     if (rotateScene)
         alpha += 0.005;
 
-    if (fishRotation)
-        fishAngle+=4
+    if (fishRotation){
+        fishAngle += 5
+    }
+
 
     let eye = vec3(2 * Math.sin(alpha), -1.0, 2 * Math.cos(alpha));
     let at = vec3(0.0, -1.0, 0.0);
