@@ -420,7 +420,6 @@ function render() {
     gl.uniformMatrix4fv(shadowMatrixLoc, false, flatten(mat4()))
     gl.uniform1i(gl.getUniformLocation(program, "isReflective"), reflective);
     
-    
     drawSphere();
 
     requestAnimFrame(render);
