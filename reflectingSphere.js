@@ -40,6 +40,10 @@ let rotateScene = false;
 let fishRotation = false;
 let fishAngle = 180;
 
+let cigarAnimate = false;
+let cigarPosAnimation = -.15;
+let cigarLeft = false;
+
 function quad(a, b, c, d) {
     let minT = 0.0;
     let maxT = 1.0;
@@ -358,6 +362,9 @@ function handleKeyPress(e) {
         case "q":
             fishRotation = !fishRotation
             break
+        case "f":
+            cigarAnimate = !cigarAnimate
+            break
     }
 }
 
@@ -498,7 +505,20 @@ function drawCigar(){
         return;
     }
 
-    let modelMatrix = mult(rotateZ(90), mult(scalem(5, 5, 5), translate(-.235, -.15, 0)));
+    if (cigarAnimate){
+        if (cigarLeft){
+            cigarPosAnimation += .01
+            if (cigarPosAnimation >= -.15)
+                cigarLeft = !cigarLeft
+        }
+        else{
+            cigarPosAnimation -= .01
+            if (cigarPosAnimation <= -.20)
+                cigarLeft = !cigarLeft
+        }
+    }
+
+    let modelMatrix = mult(rotateZ(90), mult(scalem(5, 5, 5), translate(-.235, cigarPosAnimation, 0)));
 
     gl.uniformMatrix4fv(gl.getUniformLocation(program, "modelMatrix"), false, flatten(modelMatrix))
 
@@ -529,6 +549,18 @@ function drawCigar(){
 
     gl.drawArrays(gl.TRIANGLES, 0, vertexCount);
 
+}
+
+function animateCigar(){
+    for (let x = 0; x < 2; x++){
+        for (let i = -.15; i > 0; i-=0.01){
+            cigarPosAnimation = i
+        }
+
+       /* for (let i = -.5; i > -.15; i+=0.01){
+            cigarPosAnimation = i
+        }*/
+    }
 }
 
 function render() {
@@ -563,7 +595,7 @@ function render() {
     
 
     drawFish();
-    drawChair();
+    //drawChair();
 
 
     gl.uniform1i(gl.getUniformLocation(program, "isShadow"), 0)
