@@ -12,10 +12,15 @@ let pointsArrayCube = [];
 let fish;
 let chair;
 
-let cameraMatrixLoc, cameraInverseMatrixLoc;
+let cameraMatrixLoc, cameraInverseMatrixLoc, shadowMatrixLoc;
 let vTexCoord, vNormal, vPosition;
 
+let shadowMatrix;
+let black = vec4(0.0, 0.0, 0.0, 1.0);
+let vBufferSphere;
+
 let rotateScene = false;
+let reflective = true;
 
 function quad(a, b, c, d) {
     let minT = 0.0;
@@ -225,6 +230,16 @@ window.onload = function init() {
     program = initShaders( gl, "vertex-shader", "fragment-shader" );
     gl.useProgram( program );
 
+    //Shadow
+    var light = vec3(0.0, 0.0, 2.0);
+
+    let m = mat4();
+    m[3][3] = 0;
+    m[3][2] = -1.0/light[2];
+
+    shadowMatrix = mult(m, translate(-light[0], -light[1], -light[2]));
+    shadowMatrix = mult(translate(light[0], light[1], light[2]), shadowMatrix);
+
     // Sphere vertices
     tetrahedron(5);
     pointsArraySphere = pointsArray;
@@ -245,12 +260,12 @@ window.onload = function init() {
     gl.uniformMatrix4fv(projectionMatrixLoc, false, flatten(projectionMatrix) );
 
     // Lighting stuff
-    let lightPosition = vec4(1.5, 1.5, 3.0, 1.0 );
-    let lightAmbient = vec4(0.2, 0.2, 0.2, 1.0 );
+    let lightPosition = vec4(0.5, 0.5, -0.5, 1.0 );
+    let lightAmbient = vec4(0.0, 0.0, 0.0, 1.0 );
     let lightDiffuse = vec4( 1.0, 1.0, 1.0, 1.0 );
     let lightSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
 
-    let materialAmbient = vec4( 1.0, 0.0, 1.0, 1.0 );
+    let materialAmbient = vec4( 0.2, 0.0, 0.0, 1.0 );
     let materialDiffuse = vec4( 1.0, 0.8, 0.0, 1.0 );
     let materialSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
     let materialShininess = 20.0;
@@ -270,9 +285,17 @@ window.onload = function init() {
     let diffuseProduct = mult(lightDiffuse, materialDiffuse);
     let specularProduct = mult(lightSpecular, materialSpecular);
 
+    gl.uniform4fv(gl.getUniformLocation(program, "lightDiffuse"), flatten(lightDiffuse));
+    gl.uniform4fv(gl.getUniformLocation(program, "materialDiffuse"), flatten(materialDiffuse));
+    gl.uniform4fv(gl.getUniformLocation(program, "lightSpecular"), flatten(lightSpecular));
+    gl.uniform4fv(gl.getUniformLocation(program, "materialSpecular"), flatten(materialSpecular));
+    gl.uniform4fv(gl.getUniformLocation(program, "lightAmbient"), flatten(lightAmbient));
+    gl.uniform4fv(gl.getUniformLocation(program, "materialAmbient"), flatten(materialAmbient));
+
     gl.uniform4fv( gl.getUniformLocation(program,"ambientProduct"), flatten(ambientProduct) );
     gl.uniform4fv( gl.getUniformLocation(program,"diffuseProduct"), flatten(diffuseProduct) );
     gl.uniform4fv( gl.getUniformLocation(program,"specularProduct"), flatten(specularProduct) );
+
     gl.uniform4fv( gl.getUniformLocation(program,"lightPosition"), flatten(lightPosition) );
     gl.uniform1f( gl.getUniformLocation(program, "shininess"), materialShininess );
 
@@ -315,9 +338,11 @@ window.onload = function init() {
     // Model transformation matrix for the skybox.
     // Since the matrix for the sphere is just the
     // identity matrix, we ignore it in our shader code
-    let modelMatrix = scalem(4, 4, 4);
+    let modelMatrix = mult(translate(0.0,0, 0.0) , scalem(4, 4, 4));
     let modelMatrixLoc = gl.getUniformLocation( program, "modelMatrix" );
     gl.uniformMatrix4fv(modelMatrixLoc, false, flatten(modelMatrix) );
+
+    shadowMatrixLoc = gl.getUniformLocation( program, "shadowMatrix" );
 
     window.addEventListener("keydown", handleKeyPress);
 
@@ -330,7 +355,12 @@ function handleKeyPress(e) {
         //Toggle scene spinning
         case "r":
             rotateScene = !rotateScene
+            break
+        case "e":
+            reflective = !reflective
+            break
     }
+
 }
 
 
@@ -370,20 +400,41 @@ let alpha = 0;
 function render() {
 
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    //Camera
+    if (rotateScene)
+        alpha += 0.005;
 
     let eye = vec3(2 * Math.sin(alpha), 0.0, 2 * Math.cos(alpha));
     let at = vec3(0.0, 0.0, 0.0);
     let up = vec3(0.0, 1.0, 0.0);
-
-    if (rotateScene)
-        alpha += 0.005;
-
     let cameraMatrix = lookAt(eye, at, up);
+
     gl.uniformMatrix4fv(cameraMatrixLoc, false, flatten(cameraMatrix) );
     gl.uniformMatrix4fv(cameraInverseMatrixLoc, false, flatten(inverse(cameraMatrix)) );
 
-    drawSphere();
     drawSkybox();
+
+    //Shadows
+    //Tells shaders that we are dealing with the shadow that is cast now
+    gl.uniform1i(gl.getUniformLocation(program, "isShadow"), 1);
+
+    //Vertical, against the far wall
+    let modelShadowMatrix = mult(translate(0.0, -0.8, -1.95), shadowMatrix);
+
+    //Horizontal, against the floor
+    //let modelShadowMatrix = mult(mult(rotateX(90), translate(0.0, -0.7, 1.99)), shadowMatrix);
+
+    //
+    gl.uniformMatrix4fv( shadowMatrixLoc, false, flatten(modelShadowMatrix) );    
+    
+    drawSphere();
+
+    gl.uniform1i(gl.getUniformLocation(program, "isShadow"), 0)
+    gl.uniformMatrix4fv(shadowMatrixLoc, false, flatten(mat4()))
+    gl.uniform1i(gl.getUniformLocation(program, "isReflective"), reflective);
+    
+    
+    drawSphere();
 
     requestAnimFrame(render);
 }
