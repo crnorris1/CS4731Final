@@ -30,8 +30,15 @@ let vBuffer
 let shadowMatrix;
 let black = vec4(0.0, 0.0, 0.0, 1.0);
 
+let alpha = 0;
+let displayShadow = true;
+
+let displaySpotlight = true;
+
 let rotateScene = false;
-let reflective = true;
+
+let fishRotation = false;
+let fishAngle = 180;
 
 function quad(a, b, c, d) {
     let minT = 0.0;
@@ -333,15 +340,25 @@ window.onload = function init() {
 
 function handleKeyPress(e) {
     switch(e.key) {
-        //Toggle scene spinning
         case "r":
             rotateScene = !rotateScene
             break
-        case "e":
-            reflective = !reflective
+        case "a":
+            alpha-=0.05
+            break
+        case "d":
+            alpha+=0.05
+            break
+        case "s":
+            displayShadow = !displayShadow
+            break
+        case "x":
+            displaySpotlight = !displaySpotlight
+            break
+        case "q":
+            fishRotation = !fishRotation
             break
     }
-
 }
 
 
@@ -378,7 +395,7 @@ function drawFish() {
         return;
     }
 
-    let modelMatrix = mult(rotateY(180), mult(rotateX(270), mult(scalem(0.03, 0.03, 0.03), translate(0, 0, -40))));
+    let modelMatrix = mult(rotateY(fishAngle), mult(rotateX(270), mult(scalem(0.03, 0.03, 0.03), translate(0, 0, -40))));
 
     gl.uniformMatrix4fv(gl.getUniformLocation(program, "modelMatrix"), false, flatten(modelMatrix))
 
@@ -514,14 +531,17 @@ function drawCigar(){
 
 }
 
-let alpha = 0;
-
 function render() {
 
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     //Camera
     if (rotateScene)
         alpha += 0.005;
+
+    if (fishRotation){
+        fishAngle += 5
+    }
+
 
     let eye = vec3(2 * Math.sin(alpha), -1.0, 2 * Math.cos(alpha));
     let at = vec3(0.0, -1.0, 0.0);
@@ -538,15 +558,18 @@ function render() {
 
     //Vertical, against the far wall
     let modelShadowMatrix = mult(translate(0.0, -0.4, -1.95), shadowMatrix);
- 
+    
     gl.uniformMatrix4fv( shadowMatrixLoc, false, flatten(modelShadowMatrix) );    
     
 
     drawFish();
+    drawChair();
+
 
     gl.uniform1i(gl.getUniformLocation(program, "isShadow"), 0)
     gl.uniformMatrix4fv(shadowMatrixLoc, false, flatten(mat4()))
-    gl.uniform1i(gl.getUniformLocation(program, "isReflective"), reflective);
+    gl.uniform1i(gl.getUniformLocation(program, "displayShadow"), displayShadow);
+    gl.uniform1i(gl.getUniformLocation(program, "displaySpotlight"), displaySpotlight);
     
     drawFish();
     drawChair();

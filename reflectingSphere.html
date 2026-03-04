@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html>
-
 <script id="vertex-shader" type="x-shader/x-vertex">
 
 attribute vec4 vPosition, vNormal;
@@ -19,6 +18,7 @@ uniform bool isChair;
 varying vec3 fPos;
 uniform bool isShadow;
 uniform bool isCigar;
+uniform bool displayShadow;
 
 uniform mat4 shadowMatrix;
 
@@ -45,7 +45,9 @@ void main()
         N_world = normalize(vNormal).xyz;
 
         if (isShadow){
-            gl_Position = projectionMatrix * cameraMatrix * shadowMatrix * modelMatrix * vPosition;
+            if (displayShadow){
+                gl_Position = projectionMatrix * cameraMatrix * shadowMatrix * modelMatrix * vPosition;
+            }
         }
         else {
             fTexCoord = vTexCoord;
@@ -76,7 +78,6 @@ void main()
     }
 }
 </script>
-
 <script id="fragment-shader" type="x-shader/x-fragment">
 
 precision mediump float;
@@ -98,11 +99,11 @@ varying vec3 fPos;
 uniform bool isReflective;
 uniform bool isShadow;
 uniform bool isCigar;
+uniform bool displayShadow;
+uniform bool displaySpotlight;
 
 uniform vec4 lightDiffuse, lightSpecular, lightAmbient;
 uniform vec4 materialDiffuse, materialSpecular, materialAmbient;
-
-
 
 void main()
 {
@@ -118,13 +119,19 @@ void main()
 
             vec3 lightDir = normalize(vec3(-1.0, -1.0, -2.2));
 
-            if(dot(L, -lightDir) > .8 && !isChair)
-            {
-                vec3 R = (2.0 * dot(L, N) * N) - L;
-                diffuse = diffuseProduct * dot(L, N);
-                specular = specularProduct * pow(max(dot(V,R), 0.0), shininess);
+            if (displaySpotlight){
+                if(dot(L, -lightDir) > .99)
+                {
+                    vec3 R = (2.0 * dot(L, N) * N) - L;
+                    diffuse = diffuseProduct * dot(L, N);
+                    specular = specularProduct * pow(max(dot(V,R), 0.0), shininess);
+                }
             }
-
+            else{
+                diffuse = lightDiffuse * materialDiffuse * dot(L, N);
+                vec3 R = (2.0 * dot(L, N) * N) - L;
+                specular = lightSpecular * materialSpecular * pow(max(dot(V, R), 0.0), shininess);
+            }
 
             //Ambient
             //Ia = Laka
@@ -135,11 +142,7 @@ void main()
 
             vec3 refl = reflect(viewDirWorld, N_world);
             vec4 texColor = textureCube(texMap, refl);
-            
-            if (isReflective && isFish)
-                gl_FragColor = texture2D(tex1, fTexCoord) * .5 + texColor * .5 + .5 * fColor;
-            else
-                gl_FragColor = texture2D(tex1, fTexCoord) + fColor * .8; 
+            gl_FragColor = texture2D(tex1, fTexCoord) * .5 + texColor * .5 + .5 * fColor;
         }
         else {
             gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
@@ -177,5 +180,12 @@ void main()
 <canvas id="gl-canvas" width="512" height="512">
 Oops ... your browser doesn't support the HTML5 canvas element
 </canvas>
+<br/>
+<h2>Fish in the Chair: A Simulation</h2>
+<t>Use A and D to rotate about the fish</t><br/>
+<t>Use R to toggle the automatic camera rotation</t><br/>
+<t>Use Q to rotate the fish</t><br/>
+<t>Use X to toggle the spotlight</t><br/>
+<t>Use S to toggle the shadow</t>
 </body>
 </html>
