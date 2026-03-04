@@ -14,13 +14,16 @@ varying vec2 fTexCoord;
 varying vec3 viewDirWorld, N_world;
 
 uniform bool isSkybox;
+uniform bool isFish;
+uniform bool isChair;
+varying vec3 fPos;
 uniform bool isShadow;
 
 uniform mat4 shadowMatrix;
 
 void main()
 {
-    if(!isSkybox) {
+    if(isFish) {
         // Calculate L
         vec4 nm = vNormal;
         nm.w = 1.0;     //To calculate the lighting vector, we need to convert the normal position
@@ -41,16 +44,23 @@ void main()
         N_world = normalize(vNormal).xyz;
 
         if (isShadow){
-            gl_Position = projectionMatrix * cameraMatrix * shadowMatrix * vPosition;
+            gl_Position = projectionMatrix * cameraMatrix * shadowMatrix * modelMatrix * vPosition;
         }
-        else{
-            gl_Position = projectionMatrix * cameraMatrix *vPosition;
+        else {
+            fTexCoord = vTexCoord;
+            gl_Position = projectionMatrix * cameraMatrix * modelMatrix * vPosition;
         }
     }
-    else {
-        fTexCoord = vTexCoord;
+
+    else if(isChair){
         gl_Position = projectionMatrix * cameraMatrix * modelMatrix * vPosition;
     }
+
+    else {
+        fTexCoord = vTexCoord;
+        fPos = vPosition.xyz; 
+        gl_Position = projectionMatrix * cameraMatrix * modelMatrix * vPosition;
+}
 }
 </script>
 
@@ -68,11 +78,12 @@ uniform samplerCube texMap;
 uniform sampler2D tex1;
 
 uniform bool isSkybox;
+uniform bool isFish;
+uniform bool isChair;
+varying vec4 fColor;
+varying vec3 fPos;
 uniform bool isReflective;
 uniform bool isShadow;
-
-//varying vec4 specular;
-//varying vec4 diffuse;
 
 uniform vec4 lightDiffuse, lightSpecular, lightAmbient;
 uniform vec4 materialDiffuse, materialSpecular, materialAmbient;
@@ -81,7 +92,8 @@ uniform vec4 materialDiffuse, materialSpecular, materialAmbient;
 
 void main()
 {
-    if(!isSkybox) {
+
+    if (isFish) {
         if (!isShadow){
             vec3 L = normalize(lightPosition.xyz - pos);
 
@@ -111,16 +123,21 @@ void main()
             vec4 texColor = textureCube(texMap, refl);
             
             if (isReflective)
-                gl_FragColor = 0.5 * fColor +  0.5 * texColor;
+                gl_FragColor = texture2D(tex1, fTexCoord) * .5 + texColor * .5 + .5 * fColor;
             else
-                gl_FragColor = 0.8 * fColor; //Constant closer to 1 -> darker shadows
+                gl_FragColor = texture2D(tex1, fTexCoord) + fColor * .8; 
         }
-        else{
-            gl_FragColor = vec4(0.0,0.0,0.0,0.9);
+        else {
+            gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
         }
     }
+
+    else if (isChair){
+        gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+    }
+
     else {
-        gl_FragColor = texture2D(tex1, fTexCoord);
+        gl_FragColor = textureCube(texMap, fPos);
     }
 
 }
@@ -131,6 +148,8 @@ void main()
 <script type="text/javascript" src="lib/initShaders.js"></script>
 
 <script type="text/javascript" src="lib/MV.js"></script>
+<script type="text/javascript" src="lib/model.js"></script>
+<script type="text/javascript" src="lib/face.js"></script>
 <script type="text/javascript" src="reflectingSphere.js"></script>
 
 <body>

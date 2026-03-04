@@ -9,12 +9,22 @@ let texCoordsArray = [];
 let pointsArraySphere = [];
 let pointsArrayCube = [];
 
+let fishPos = [];
+let fishNormal = [];
+let fishTexCoords = [];
+let fishColors = [];
+
+let chairPos = [];
+
+let fish;
+let chair;
+
 let cameraMatrixLoc, cameraInverseMatrixLoc, shadowMatrixLoc;
 let vTexCoord, vNormal, vPosition;
 
+let vBuffer
 let shadowMatrix;
 let black = vec4(0.0, 0.0, 0.0, 1.0);
-let vBufferSphere;
 
 let rotateScene = false;
 let reflective = true;
@@ -220,7 +230,7 @@ window.onload = function init() {
     if ( !gl ) { alert( "WebGL isn't available" ); }
 
     gl.viewport( 0, 0, canvas.width, canvas.height );
-    gl.clearColor( 1.0, 1.0, 1.0, 1.0 );
+    gl.clearColor( 0.0, 0.0, 0.0, 1.0 );
 
     gl.enable(gl.DEPTH_TEST);
 
@@ -257,7 +267,7 @@ window.onload = function init() {
     gl.uniformMatrix4fv(projectionMatrixLoc, false, flatten(projectionMatrix) );
 
     // Lighting stuff
-    let lightPosition = vec4(0.5, 0.5, -0.5, 1.0 );
+    let lightPosition = vec4(-0.5, -0.5, -0.5, 1.0 );
     let lightAmbient = vec4(0.0, 0.0, 0.0, 1.0 );
     let lightDiffuse = vec4( 1.0, 1.0, 1.0, 1.0 );
     let lightSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
@@ -266,6 +276,21 @@ window.onload = function init() {
     let materialDiffuse = vec4( 1.0, 0.8, 0.0, 1.0 );
     let materialSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
     let materialShininess = 20.0;
+
+    // create model instances after shader program is ready
+
+    
+    fish = new Model(
+        "https://bigmouthinc.github.io/12265_Fish_v1_L2.obj",
+        "https://bigmouthinc.github.io/12265_Fish_v1_L2.mtl"
+    );
+
+    
+    chair = new Model(
+        "https://bigmouthinc.github.io/Chair.obj",
+        "https://bigmouthinc.github.io/Chair.mtl"
+    );
+    
 
     let ambientProduct = mult(lightAmbient, materialAmbient);
     let diffuseProduct = mult(lightDiffuse, materialDiffuse);
@@ -285,7 +310,6 @@ window.onload = function init() {
     gl.uniform4fv( gl.getUniformLocation(program,"lightPosition"), flatten(lightPosition) );
     gl.uniform1f( gl.getUniformLocation(program, "shininess"), materialShininess );
 
-
     // Default textures
     configureDefaultTexture();
     configureDefaultCubeMap();
@@ -293,11 +317,24 @@ window.onload = function init() {
     // Load the image
     let image = new Image();
     image.crossOrigin = "anonymous";
-    image.src = "images/Shanty_Wall_PG_Texture.png";
+    image.src = "https://bigmouthinc.github.io/Shanty_Wall_PG_Texture.png";
     image.onload = function() {
-        configureTexture(image);
         configureCubeMap(image);
     }
+
+    image.onerror = function() { console.error("Wall image failed to load!"); }
+
+    let checkFishMtl = setInterval(() => {
+    if (fish.mtlParsed && fish.imagePath) {
+        clearInterval(checkFishMtl);
+        let image2 = new Image();
+        image2.crossOrigin = "anonymous";
+        image2.src = fish.imagePath;
+        image2.onload = function() {
+            configureTexture(image2);
+        };
+    }
+}, 50);
 
     // Texture coordinates
     let tBuffer = gl.createBuffer();
@@ -316,6 +353,8 @@ window.onload = function init() {
     vNormal = gl.getAttribLocation( program, "vNormal" );
     gl.vertexAttribPointer( vNormal, 4, gl.FLOAT, false, 0, 0 );
     gl.enableVertexAttribArray( vNormal);
+
+    vBuffer = gl.createBuffer();
 
     // We don't need to re-enable vPosition every time we want to use it,
     // so we'll just enable it once for better performance
@@ -356,9 +395,9 @@ function drawSphere() {
     gl.enableVertexAttribArray( vNormal);
 
     gl.uniform1i(gl.getUniformLocation(program, "isSkybox"), 0);
+    gl.uniform1i(gl.getUniformLocation(program, "isFish"), 0);
     
 
-    let vBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, flatten(pointsArraySphere), gl.STATIC_DRAW);
     gl.vertexAttribPointer(vPosition, 4, gl.FLOAT, false, 0, 0);
@@ -371,16 +410,127 @@ function drawSkybox() {
     gl.enableVertexAttribArray(vTexCoord);
     gl.disableVertexAttribArray( vNormal);
 
+    let modelMatrix = scalem(4, 4, 4);
+    let modelMatrixLoc = gl.getUniformLocation( program, "modelMatrix" );
+    gl.uniformMatrix4fv(modelMatrixLoc, false, flatten(modelMatrix) );
+
     gl.uniform1i(gl.getUniformLocation(program, "isSkybox"), 1);
+    gl.uniform1i(gl.getUniformLocation(program, "isFish"), 0);
+    gl.uniform1i(gl.getUniformLocation(program, "isChair"), 0)
     
     
-    let vBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, flatten(pointsArrayCube), gl.STATIC_DRAW);
     gl.vertexAttribPointer(vPosition, 4, gl.FLOAT, false, 0, 0);
     gl.drawArrays( gl.TRIANGLES, 0, pointsArrayCube.length );
 }
 
+function drawFish() {
+    // Wait for parsing to finish
+
+    gl.uniform1i(gl.getUniformLocation(program, "isFish"), 1);
+    gl.uniform1i(gl.getUniformLocation(program, "isSkybox"), 0);
+    gl.uniform1i(gl.getUniformLocation(program, "isChair"), 0)
+
+    if (!fish.objParsed || !fish.mtlParsed) {
+        setTimeout(() => drawFish(), 50);
+        return;
+    }
+
+    let modelMatrix = mult(rotateY(180), mult(rotateX(270), mult(scalem(0.03, 0.03, 0.03), translate(0, 0, -40))));
+
+    gl.uniformMatrix4fv(gl.getUniformLocation(program, "modelMatrix"), false, flatten(modelMatrix))
+
+    // Flatten face data
+
+    if (fishPos.length === 0 && fishColors.length === 0 && fishNormal.length === 0 && fishTexCoords.length === 0) {
+
+        for (let face of fish.faces) {
+            let color = fish.diffuseMap.get(face.material) ?? [1, 1, 1, 1];
+            for (let i = 0; i < face.faceVertices.length; i++) {
+                fishPos.push(...face.faceVertices[i]);
+                fishColors.push(...color);
+                if (face.faceNormals.length > 0)    fishNormal.push(...face.faceNormals[i]);
+                if (face.faceTexCoords.length > 0)  fishTexCoords.push(...face.faceTexCoords[i]);
+            }
+        }
+
+    }
+
+    const vertexCount = fishPos.length / 4;
+
+    // Upload and bind position buffer
+    gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(fishPos), gl.STATIC_DRAW);
+    let vPos = gl.getAttribLocation(program, "vPosition");
+    gl.vertexAttribPointer(vPos, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(vPos);
+
+    // Upload and bind normal buffer
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(fishNormal), gl.STATIC_DRAW);
+    let vNorm = gl.getAttribLocation(program, "vNormal");
+    gl.vertexAttribPointer(vNorm, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(vNorm);
+
+    // Upload and bind color buffer
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(fishColors), gl.STATIC_DRAW);
+    let vColor = gl.getAttribLocation(program, "vColor");
+    gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(vColor);
+
+    let tBuf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, tBuf);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(fishTexCoords), gl.STATIC_DRAW);
+    gl.vertexAttribPointer(vTexCoord, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(vTexCoord);
+
+    gl.drawArrays(gl.TRIANGLES, 0, vertexCount);
+}
+
+function drawChair(){
+    gl.uniform1i(gl.getUniformLocation(program, "isFish"), 0);
+    gl.uniform1i(gl.getUniformLocation(program, "isSkybox"), 0);
+    gl.uniform1i(gl.getUniformLocation(program, "isChair"), 1);
+
+     if (!chair.objParsed || !chair.mtlParsed) {
+        setTimeout(() => drawChair(), 50);
+        return;
+    }
+
+    let modelMatrix = mult(
+    scalem(0.005, 0.005, 0.005),
+    translate(760, -400, 60)
+);
+
+    gl.uniformMatrix4fv(gl.getUniformLocation(program, "modelMatrix"), false, flatten(modelMatrix))
+
+    if (chairPos.length === 0) {
+
+        for (let face of chair.faces) {
+            for (let i = 0; i < face.faceVertices.length; i++) {
+                let vertex = face.faceVertices[i];
+                if (Math.abs(vertex[0]) > 2000 || Math.abs(vertex[1]) > 2000 || Math.abs(vertex[2]) > 2000)
+                    continue
+                chairPos.push(...vertex);
+            
+            }
+        }
+
+    }
+
+    const vertexCount = chairPos.length / 4;
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(chairPos), gl.STATIC_DRAW);
+    let vPos = gl.getAttribLocation(program, "vPosition");
+    gl.vertexAttribPointer(vPos, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(vPos);
+
+    gl.drawArrays(gl.TRIANGLES, 0, vertexCount);
+
+}
 
 let alpha = 0;
 
@@ -391,36 +541,40 @@ function render() {
     if (rotateScene)
         alpha += 0.005;
 
-    let eye = vec3(2 * Math.sin(alpha), 0.0, 2 * Math.cos(alpha));
-    let at = vec3(0.0, 0.0, 0.0);
+    let eye = vec3(2 * Math.sin(alpha), -1.0, 2 * Math.cos(alpha));
+    let at = vec3(0.0, -1.0, 0.0);
     let up = vec3(0.0, 1.0, 0.0);
     let cameraMatrix = lookAt(eye, at, up);
 
     gl.uniformMatrix4fv(cameraMatrixLoc, false, flatten(cameraMatrix) );
     gl.uniformMatrix4fv(cameraInverseMatrixLoc, false, flatten(inverse(cameraMatrix)) );
-
-    drawSkybox();
+    
 
     //Shadows
     //Tells shaders that we are dealing with the shadow that is cast now
     gl.uniform1i(gl.getUniformLocation(program, "isShadow"), 1);
 
     //Vertical, against the far wall
-    let modelShadowMatrix = mult(translate(0.0, -0.8, -1.95), shadowMatrix);
+    let modelShadowMatrix = mult(translate(0.0, -0.4, -1.95), shadowMatrix);
 
     //Horizontal, against the floor
     //let modelShadowMatrix = mult(mult(rotateX(90), translate(0.0, -0.7, 1.99)), shadowMatrix);
 
-    //
+    
     gl.uniformMatrix4fv( shadowMatrixLoc, false, flatten(modelShadowMatrix) );    
     
-    drawSphere();
+
+    drawFish();
+    drawChair();
+
+
 
     gl.uniform1i(gl.getUniformLocation(program, "isShadow"), 0)
     gl.uniformMatrix4fv(shadowMatrixLoc, false, flatten(mat4()))
     gl.uniform1i(gl.getUniformLocation(program, "isReflective"), reflective);
     
-    drawSphere();
+    drawFish();
+    drawSkybox();
 
     requestAnimFrame(render);
 }
