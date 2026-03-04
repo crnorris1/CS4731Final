@@ -26,8 +26,12 @@ let vBuffer
 let shadowMatrix;
 let black = vec4(0.0, 0.0, 0.0, 1.0);
 
+let alpha = 0;
+let displayShadow = true;
+
+let displaySpotlight = true;
+
 let rotateScene = false;
-let reflective = true;
 
 function quad(a, b, c, d) {
     let minT = 0.0;
@@ -378,12 +382,21 @@ window.onload = function init() {
 
 function handleKeyPress(e) {
     switch(e.key) {
-        //Toggle scene spinning
         case "r":
             rotateScene = !rotateScene
             break
-        case "e":
-            reflective = !reflective
+        case "a":
+            alpha-=0.05
+            break
+        case "d":
+            alpha+=0.05
+            break
+        case "s":
+            displayShadow = !displayShadow
+            break
+        case "x":
+            console.log(displaySpotlight)
+            displaySpotlight = !displaySpotlight
             break
     }
 
@@ -532,8 +545,6 @@ function drawChair(){
 
 }
 
-let alpha = 0;
-
 function render() {
 
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -556,10 +567,6 @@ function render() {
 
     //Vertical, against the far wall
     let modelShadowMatrix = mult(translate(0.0, -0.4, -1.95), shadowMatrix);
-
-    //Horizontal, against the floor
-    //let modelShadowMatrix = mult(mult(rotateX(90), translate(0.0, -0.7, 1.99)), shadowMatrix);
-
     
     gl.uniformMatrix4fv( shadowMatrixLoc, false, flatten(modelShadowMatrix) );    
     
@@ -568,10 +575,10 @@ function render() {
     drawChair();
 
 
-
     gl.uniform1i(gl.getUniformLocation(program, "isShadow"), 0)
     gl.uniformMatrix4fv(shadowMatrixLoc, false, flatten(mat4()))
-    gl.uniform1i(gl.getUniformLocation(program, "isReflective"), reflective);
+    gl.uniform1i(gl.getUniformLocation(program, "displayShadow"), displayShadow);
+    gl.uniform1i(gl.getUniformLocation(program, "displaySpotlight"), displaySpotlight);
     
     drawFish();
     drawSkybox();

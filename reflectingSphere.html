@@ -18,6 +18,7 @@ uniform bool isFish;
 uniform bool isChair;
 varying vec3 fPos;
 uniform bool isShadow;
+uniform bool displayShadow;
 
 uniform mat4 shadowMatrix;
 
@@ -44,7 +45,9 @@ void main()
         N_world = normalize(vNormal).xyz;
 
         if (isShadow){
-            gl_Position = projectionMatrix * cameraMatrix * shadowMatrix * modelMatrix * vPosition;
+            if (displayShadow){
+                gl_Position = projectionMatrix * cameraMatrix * shadowMatrix * modelMatrix * vPosition;
+            }
         }
         else {
             fTexCoord = vTexCoord;
@@ -84,11 +87,11 @@ varying vec4 fColor;
 varying vec3 fPos;
 uniform bool isReflective;
 uniform bool isShadow;
+uniform bool displayShadow;
+uniform bool displaySpotlight;
 
 uniform vec4 lightDiffuse, lightSpecular, lightAmbient;
 uniform vec4 materialDiffuse, materialSpecular, materialAmbient;
-
-
 
 void main()
 {
@@ -104,13 +107,19 @@ void main()
 
             vec3 lightDir = normalize(vec3(-1.0, -1.0, -2.2));
 
-            if(dot(L, -lightDir) > .8)
-            {
-                vec3 R = (2.0 * dot(L, N) * N) - L;
-                diffuse = diffuseProduct * dot(L, N);
-                specular = specularProduct * pow(max(dot(V,R), 0.0), shininess);
+            if (displaySpotlight){
+                if(dot(L, -lightDir) > .99)
+                {
+                    vec3 R = (2.0 * dot(L, N) * N) - L;
+                    diffuse = diffuseProduct * dot(L, N);
+                    specular = specularProduct * pow(max(dot(V,R), 0.0), shininess);
+                }
             }
-
+            else{
+                diffuse = lightDiffuse * materialDiffuse * dot(L, N);
+                vec3 R = (2.0 * dot(L, N) * N) - L;
+                specular = lightSpecular * materialSpecular * pow(max(dot(V, R), 0.0), shininess);
+            }
 
             //Ambient
             //Ia = Laka
@@ -121,11 +130,7 @@ void main()
 
             vec3 refl = reflect(viewDirWorld, N_world);
             vec4 texColor = textureCube(texMap, refl);
-            
-            if (isReflective)
-                gl_FragColor = texture2D(tex1, fTexCoord) * .5 + texColor * .5 + .5 * fColor;
-            else
-                gl_FragColor = texture2D(tex1, fTexCoord) + fColor * .8; 
+            gl_FragColor = texture2D(tex1, fTexCoord) * .5 + texColor * .5 + .5 * fColor;
         }
         else {
             gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
