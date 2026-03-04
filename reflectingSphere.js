@@ -267,7 +267,7 @@ window.onload = function init() {
     gl.uniformMatrix4fv(projectionMatrixLoc, false, flatten(projectionMatrix) );
 
     // Lighting stuff
-    let lightPosition = vec4(0.5, 0.5, -0.5, 1.0 );
+    let lightPosition = vec4(-0.5, -0.5, -0.5, 1.0 );
     let lightAmbient = vec4(0.0, 0.0, 0.0, 1.0 );
     let lightDiffuse = vec4( 1.0, 1.0, 1.0, 1.0 );
     let lightSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
@@ -550,33 +550,31 @@ function render() {
     gl.uniformMatrix4fv(cameraInverseMatrixLoc, false, flatten(inverse(cameraMatrix)) );
     
 
-    //drawSphere();
-    drawFish();
-    drawChair();
-
-    drawSkybox();
-
     //Shadows
     //Tells shaders that we are dealing with the shadow that is cast now
     gl.uniform1i(gl.getUniformLocation(program, "isShadow"), 1);
 
     //Vertical, against the far wall
-    let modelShadowMatrix = mult(translate(0.0, -0.8, -1.95), shadowMatrix);
+    let modelShadowMatrix = mult(translate(0.0, -0.4, -1.95), shadowMatrix);
 
     //Horizontal, against the floor
     //let modelShadowMatrix = mult(mult(rotateX(90), translate(0.0, -0.7, 1.99)), shadowMatrix);
 
-    //
+    
     gl.uniformMatrix4fv( shadowMatrixLoc, false, flatten(modelShadowMatrix) );    
     
-    drawSphere();
+
+    drawFish();
+    drawChair();
+
+
 
     gl.uniform1i(gl.getUniformLocation(program, "isShadow"), 0)
     gl.uniformMatrix4fv(shadowMatrixLoc, false, flatten(mat4()))
     gl.uniform1i(gl.getUniformLocation(program, "isReflective"), reflective);
     
-    
-    drawSphere();
+    drawFish();
+    drawSkybox();
 
     requestAnimFrame(render);
 }
