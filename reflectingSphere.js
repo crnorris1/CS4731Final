@@ -33,6 +33,9 @@ let displaySpotlight = true;
 
 let rotateScene = false;
 
+let fishRotation = false;
+let fishAngle = 180;
+
 function quad(a, b, c, d) {
     let minT = 0.0;
     let maxT = 1.0;
@@ -395,11 +398,12 @@ function handleKeyPress(e) {
             displayShadow = !displayShadow
             break
         case "x":
-            console.log(displaySpotlight)
             displaySpotlight = !displaySpotlight
             break
+        case "q":
+            fishRotation = !fishRotation
+            break
     }
-
 }
 
 
@@ -450,7 +454,7 @@ function drawFish() {
         return;
     }
 
-    let modelMatrix = mult(rotateY(180), mult(rotateX(270), mult(scalem(0.03, 0.03, 0.03), translate(0, 0, -40))));
+    let modelMatrix = mult(rotateY(fishAngle), mult(rotateX(270), mult(scalem(0.03, 0.03, 0.03), translate(0, 0, -40))));
 
     gl.uniformMatrix4fv(gl.getUniformLocation(program, "modelMatrix"), false, flatten(modelMatrix))
 
@@ -551,6 +555,9 @@ function render() {
     //Camera
     if (rotateScene)
         alpha += 0.005;
+
+    if (fishRotation)
+        fishAngle+=4
 
     let eye = vec3(2 * Math.sin(alpha), -1.0, 2 * Math.cos(alpha));
     let at = vec3(0.0, -1.0, 0.0);
