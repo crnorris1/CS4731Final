@@ -104,7 +104,7 @@ void main()
 
             vec3 lightDir = normalize(vec3(-1.0, -1.0, -2.2));
 
-            if(dot(L, -lightDir) > .94)
+            if(dot(L, -lightDir) > .8)
             {
                 vec3 R = (2.0 * dot(L, N) * N) - L;
                 diffuse = diffuseProduct * dot(L, N);
