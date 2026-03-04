@@ -227,6 +227,16 @@ window.onload = function init() {
     program = initShaders( gl, "vertex-shader", "fragment-shader" );
     gl.useProgram( program );
 
+    //Shadow
+    var light = vec3(0.0, 0.0, 2.0);
+
+    let m = mat4();
+    m[3][3] = 0;
+    m[3][2] = -1.0/light[2];
+
+    shadowMatrix = mult(m, translate(-light[0], -light[1], -light[2]));
+    shadowMatrix = mult(translate(light[0], light[1], light[2]), shadowMatrix);
+
     // Sphere vertices
     tetrahedron(5);
     pointsArraySphere = pointsArray;
@@ -275,23 +285,6 @@ window.onload = function init() {
     gl.uniform4fv( gl.getUniformLocation(program,"lightPosition"), flatten(lightPosition) );
     gl.uniform1f( gl.getUniformLocation(program, "shininess"), materialShininess );
 
-    //Shadow
-    var light = vec3(0.0, 0.0, 2.0);
-
-    let m = mat4();
-    m[3][3] = 0;
-    m[3][2] = -1/light[2];
-
-    //light = vec3(0.5, 0.5, -0.5)
-
-    shadowMatrix = mult(m, translate(-light[0], -light[1], -light[2]));
-    shadowMatrix = mult(translate(light[0], light[1], light[2]), shadowMatrix);
-    shadowMatrixLoc = gl.getUniformLocation( program, "shadowMatrix" );
-
-    vBufferSphere = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, vBufferSphere);
-    gl.bufferData(gl.ARRAY_BUFFER, flatten(pointsArraySphere), gl.STATIC_DRAW);
-
 
     // Default textures
     configureDefaultTexture();
@@ -332,9 +325,11 @@ window.onload = function init() {
     // Model transformation matrix for the skybox.
     // Since the matrix for the sphere is just the
     // identity matrix, we ignore it in our shader code
-    let modelMatrix = scalem(4, 4, 4);
+    let modelMatrix = mult(translate(0.0,0, 0.0) , scalem(4, 4, 4));
     let modelMatrixLoc = gl.getUniformLocation( program, "modelMatrix" );
     gl.uniformMatrix4fv(modelMatrixLoc, false, flatten(modelMatrix) );
+
+    shadowMatrixLoc = gl.getUniformLocation( program, "shadowMatrix" );
 
     window.addEventListener("keydown", handleKeyPress);
 
@@ -392,7 +387,6 @@ let alpha = 0;
 function render() {
 
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
     //Camera
     if (rotateScene)
         alpha += 0.005;
@@ -401,35 +395,32 @@ function render() {
     let at = vec3(0.0, 0.0, 0.0);
     let up = vec3(0.0, 1.0, 0.0);
     let cameraMatrix = lookAt(eye, at, up);
-    
+
     gl.uniformMatrix4fv(cameraMatrixLoc, false, flatten(cameraMatrix) );
     gl.uniformMatrix4fv(cameraInverseMatrixLoc, false, flatten(inverse(cameraMatrix)) );
 
     drawSkybox();
 
     //Shadows
-    let isShadow = true;
-    gl.uniform1i(gl.getUniformLocation(program, "isShadow"), isShadow);
+    //Tells shaders that we are dealing with the shadow that is cast now
+    gl.uniform1i(gl.getUniformLocation(program, "isShadow"), 1);
 
-    let modelShadowMatrix = mult(translate(0.0, -1.99, 0.0), shadowMatrix);
+    //Vertical, against the far wall
+    //let modelShadowMatrix = mult(translate(0.0, -0.8, -1.95), shadowMatrix);
+
+    //Horizontal, against the floor
+    let modelShadowMatrix = mult(mult(rotateX(90), translate(0.0, -0.7, 1.99)), shadowMatrix);
+
+    //
     gl.uniformMatrix4fv( shadowMatrixLoc, false, flatten(modelShadowMatrix) );    
+    
+    drawSphere();
 
-    //gl.depthMask(false)
-    //gl.drawArrays(gl.TRIANGLES, 0, pointsArraySphere.length);
-    //gl.depthMask(true)
-    //let fColor = gl.getUniformLocation(program, "fColor");
-    
-    //gl.uniform4fv(fColor, flatten(black));
-    gl.bindBuffer(gl.ARRAY_BUFFER, vBufferSphere);
-    gl.vertexAttribPointer(vPosition, 4, gl.FLOAT, false, 0, 0);
-    gl.drawArrays(gl.TRIANGLES, 0, pointsArraySphere.length);
-    
-    //!! Problem
-    isShadow = false;
-    gl.uniform1i(gl.getUniformLocation(program, "isShadow"), isShadow)
+    gl.uniform1i(gl.getUniformLocation(program, "isShadow"), 0)
     gl.uniformMatrix4fv(shadowMatrixLoc, false, flatten(mat4()))
     gl.uniform1i(gl.getUniformLocation(program, "isReflective"), reflective);
-
+    
+    
     drawSphere();
 
     requestAnimFrame(render);
