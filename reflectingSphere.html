@@ -18,6 +18,7 @@ uniform bool isFish;
 uniform bool isChair;
 varying vec3 fPos;
 uniform bool isShadow;
+uniform bool isCigar;
 
 uniform mat4 shadowMatrix;
 
@@ -56,11 +57,23 @@ void main()
         gl_Position = projectionMatrix * cameraMatrix * modelMatrix * vPosition;
     }
 
+    else if (isCigar){
+
+        vec3 camPosWorld = (cameraInverseMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+        // The view vector (in world coordinates)
+        viewDirWorld = vPosition.xyz - camPosWorld;
+
+        // The surface normal (in world coordinates)
+        N_world = normalize(vNormal).xyz;
+
+        gl_Position = projectionMatrix * cameraMatrix * modelMatrix * vPosition;
+    }
+
     else {
         fTexCoord = vTexCoord;
         fPos = vPosition.xyz; 
         gl_Position = projectionMatrix * cameraMatrix * modelMatrix * vPosition;
-}
+    }
 }
 </script>
 
@@ -84,6 +97,7 @@ varying vec4 fColor;
 varying vec3 fPos;
 uniform bool isReflective;
 uniform bool isShadow;
+uniform bool isCigar;
 
 uniform vec4 lightDiffuse, lightSpecular, lightAmbient;
 uniform vec4 materialDiffuse, materialSpecular, materialAmbient;
@@ -104,7 +118,7 @@ void main()
 
             vec3 lightDir = normalize(vec3(-1.0, -1.0, -2.2));
 
-            if(dot(L, -lightDir) > .8)
+            if(dot(L, -lightDir) > .8 && !isChair)
             {
                 vec3 R = (2.0 * dot(L, N) * N) - L;
                 diffuse = diffuseProduct * dot(L, N);
@@ -122,7 +136,7 @@ void main()
             vec3 refl = reflect(viewDirWorld, N_world);
             vec4 texColor = textureCube(texMap, refl);
             
-            if (isReflective)
+            if (isReflective && isFish)
                 gl_FragColor = texture2D(tex1, fTexCoord) * .5 + texColor * .5 + .5 * fColor;
             else
                 gl_FragColor = texture2D(tex1, fTexCoord) + fColor * .8; 
@@ -133,7 +147,14 @@ void main()
     }
 
     else if (isChair){
-        gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+        gl_FragColor = vec4(1.0, 1.0, 1.0, .9);
+    }
+
+    else if (isCigar){
+        vec3 refrac = refract(viewDirWorld, N_world, .3);
+        vec4 texColor = textureCube(texMap, refrac);
+
+        gl_FragColor = texColor * .5 + .5 * vec4(0.55, 0.32, 0.16, 1.0);
     }
 
     else {

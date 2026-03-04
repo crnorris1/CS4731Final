@@ -16,8 +16,12 @@ let fishColors = [];
 
 let chairPos = [];
 
+let cigarPos = [];
+let cigarNormal = [];
+
 let fish;
 let chair;
+let cigar;
 
 let cameraMatrixLoc, cameraInverseMatrixLoc, shadowMatrixLoc;
 let vTexCoord, vNormal, vPosition;
@@ -176,52 +180,6 @@ function configureTexture(image) {
     gl.uniform1i(gl.getUniformLocation(program, "tex1"), 0);
 }
 
-function triangle(a, b, c) {
-
-     pointsArray.push(a);
-     pointsArray.push(b);
-     pointsArray.push(c);
-
-     // We can only do this with a unit object
-     // centered at the origin
-     normalsArray.push(a[0],a[1], a[2], 0.0);
-     normalsArray.push(b[0],b[1], b[2], 0.0);
-     normalsArray.push(c[0],c[1], c[2], 0.0);
-}
-
-function divideTriangle(a, b, c, count) {
-    if ( count > 0 ) {
-
-        let ab = mix( a, b, 0.5);
-        let ac = mix( a, c, 0.5);
-        let bc = mix( b, c, 0.5);
-
-        ab = normalize(ab, true);
-        ac = normalize(ac, true);
-        bc = normalize(bc, true);
-
-        divideTriangle( a, ab, ac, count - 1 );
-        divideTriangle( ab, b, bc, count - 1 );
-        divideTriangle( bc, c, ac, count - 1 );
-        divideTriangle( ab, bc, ac, count - 1 );
-    }
-    else {
-        triangle( a, b, c );
-    }
-}
-
-function tetrahedron(n) {
-    let a = vec4(0.0, 0.0, -1.0,1);
-    let b = vec4(0.0, 0.942809, 0.333333, 1);
-    let c = vec4(-0.816497, -0.471405, 0.333333, 1);
-    let d = vec4(0.816497, -0.471405, 0.333333,1);
-
-    divideTriangle(a, b, c, n);
-    divideTriangle(d, c, b, n);
-    divideTriangle(a, d, b, n);
-    divideTriangle(a, c, d, n);
-}
-
 window.onload = function init() {
 
     canvas = document.getElementById( "gl-canvas" );
@@ -246,12 +204,6 @@ window.onload = function init() {
 
     shadowMatrix = mult(m, translate(-light[0], -light[1], -light[2]));
     shadowMatrix = mult(translate(light[0], light[1], light[2]), shadowMatrix);
-
-    // Sphere vertices
-    tetrahedron(5);
-    pointsArraySphere = pointsArray;
-
-    pointsArray = [];
 
     // Cube vertices
     colorCube();
@@ -290,6 +242,11 @@ window.onload = function init() {
         "https://bigmouthinc.github.io/Chair.obj",
         "https://bigmouthinc.github.io/Chair.mtl"
     );
+
+    cigar = new Model(
+        "https://bigmouthinc.github.io/CigaretteOBJ.obj",
+        "https://bigmouthinc.github.io/CigaretteMTL.mtl"
+    )
     
 
     let ambientProduct = mult(lightAmbient, materialAmbient);
@@ -321,8 +278,6 @@ window.onload = function init() {
     image.onload = function() {
         configureCubeMap(image);
     }
-
-    image.onerror = function() { console.error("Wall image failed to load!"); }
 
     let checkFishMtl = setInterval(() => {
     if (fish.mtlParsed && fish.imagePath) {
@@ -390,22 +345,6 @@ function handleKeyPress(e) {
 }
 
 
-function drawSphere() {
-    gl.disableVertexAttribArray(vTexCoord);
-    gl.enableVertexAttribArray( vNormal);
-
-    gl.uniform1i(gl.getUniformLocation(program, "isSkybox"), 0);
-    gl.uniform1i(gl.getUniformLocation(program, "isFish"), 0);
-    
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, flatten(pointsArraySphere), gl.STATIC_DRAW);
-    gl.vertexAttribPointer(vPosition, 4, gl.FLOAT, false, 0, 0);
-
-    gl.drawArrays( gl.TRIANGLES, 0, pointsArraySphere.length );
-}
-
-
 function drawSkybox() {
     gl.enableVertexAttribArray(vTexCoord);
     gl.disableVertexAttribArray( vNormal);
@@ -417,6 +356,7 @@ function drawSkybox() {
     gl.uniform1i(gl.getUniformLocation(program, "isSkybox"), 1);
     gl.uniform1i(gl.getUniformLocation(program, "isFish"), 0);
     gl.uniform1i(gl.getUniformLocation(program, "isChair"), 0)
+    gl.uniform1i(gl.getUniformLocation(program, "isCigar"), 0)
     
     
     gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
@@ -431,6 +371,7 @@ function drawFish() {
     gl.uniform1i(gl.getUniformLocation(program, "isFish"), 1);
     gl.uniform1i(gl.getUniformLocation(program, "isSkybox"), 0);
     gl.uniform1i(gl.getUniformLocation(program, "isChair"), 0)
+    gl.uniform1i(gl.getUniformLocation(program, "isCigar"), 0)
 
     if (!fish.objParsed || !fish.mtlParsed) {
         setTimeout(() => drawFish(), 50);
@@ -493,20 +434,18 @@ function drawChair(){
     gl.uniform1i(gl.getUniformLocation(program, "isFish"), 0);
     gl.uniform1i(gl.getUniformLocation(program, "isSkybox"), 0);
     gl.uniform1i(gl.getUniformLocation(program, "isChair"), 1);
+    gl.uniform1i(gl.getUniformLocation(program, "isCigar"), 0)
 
      if (!chair.objParsed || !chair.mtlParsed) {
         setTimeout(() => drawChair(), 50);
         return;
     }
 
-    let modelMatrix = mult(
-    scalem(0.005, 0.005, 0.005),
-    translate(760, -400, 60)
-);
+    let modelMatrix = mult(scalem(0.005, 0.005, 0.005), translate(760, -400, 60));
 
     gl.uniformMatrix4fv(gl.getUniformLocation(program, "modelMatrix"), false, flatten(modelMatrix))
 
-    if (chairPos.length === 0) {
+    if (chairPos.length === 0 ) {
 
         for (let face of chair.faces) {
             for (let i = 0; i < face.faceVertices.length; i++) {
@@ -514,7 +453,6 @@ function drawChair(){
                 if (Math.abs(vertex[0]) > 2000 || Math.abs(vertex[1]) > 2000 || Math.abs(vertex[2]) > 2000)
                     continue
                 chairPos.push(...vertex);
-            
             }
         }
 
@@ -527,6 +465,50 @@ function drawChair(){
     let vPos = gl.getAttribLocation(program, "vPosition");
     gl.vertexAttribPointer(vPos, 4, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(vPos);
+
+    gl.drawArrays(gl.TRIANGLES, 0, vertexCount);
+
+}
+
+function drawCigar(){
+    gl.uniform1i(gl.getUniformLocation(program, "isFish"), 0);
+    gl.uniform1i(gl.getUniformLocation(program, "isSkybox"), 0);
+    gl.uniform1i(gl.getUniformLocation(program, "isChair"), 0)
+    gl.uniform1i(gl.getUniformLocation(program, "isCigar"), 1)
+
+    if (!cigar.objParsed || !cigar.mtlParsed) {
+        setTimeout(() => drawCigar(), 50);
+        return;
+    }
+
+    let modelMatrix = mult(rotateZ(90), mult(scalem(5, 5, 5), translate(-.235, -.15, 0)));
+
+    gl.uniformMatrix4fv(gl.getUniformLocation(program, "modelMatrix"), false, flatten(modelMatrix))
+
+    if (cigarPos.length === 0){
+
+        for (let face of cigar.faces){
+            for (let i = 0; i < face.faceVertices.length; i++){
+                cigarPos.push(...face.faceVertices[i])
+                if (face.faceNormals.length > 0)    cigarNormal.push(...face.faceNormals[i]);
+            }
+        }
+    }
+
+    const vertexCount = cigarPos.length / 4;
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(cigarPos), gl.STATIC_DRAW);
+    let vPos = gl.getAttribLocation(program, "vPosition");
+    gl.vertexAttribPointer(vPos, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(vPos);
+
+    // Upload and bind normal buffer
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(cigarNormal), gl.STATIC_DRAW);
+    let vNorm = gl.getAttribLocation(program, "vNormal");
+    gl.vertexAttribPointer(vNorm, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(vNorm);
 
     gl.drawArrays(gl.TRIANGLES, 0, vertexCount);
 
@@ -556,28 +538,20 @@ function render() {
 
     //Vertical, against the far wall
     let modelShadowMatrix = mult(translate(0.0, -0.4, -1.95), shadowMatrix);
-
-    //Horizontal, against the floor
-    //let modelShadowMatrix = mult(mult(rotateX(90), translate(0.0, -0.7, 1.99)), shadowMatrix);
-
-    
+ 
     gl.uniformMatrix4fv( shadowMatrixLoc, false, flatten(modelShadowMatrix) );    
     
 
     drawFish();
-    drawChair();
-
-
 
     gl.uniform1i(gl.getUniformLocation(program, "isShadow"), 0)
     gl.uniformMatrix4fv(shadowMatrixLoc, false, flatten(mat4()))
     gl.uniform1i(gl.getUniformLocation(program, "isReflective"), reflective);
     
     drawFish();
+    drawChair();
+    drawCigar();
     drawSkybox();
 
     requestAnimFrame(render);
 }
-
-
-
