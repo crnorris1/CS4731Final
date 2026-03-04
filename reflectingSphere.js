@@ -14,6 +14,8 @@ let fishNormal = [];
 let fishTexCoords = [];
 let fishColors = [];
 
+let chairPos = [];
+
 let fish;
 let chair;
 
@@ -270,12 +272,12 @@ window.onload = function init() {
         "https://bigmouthinc.github.io/12265_Fish_v1_L2.mtl"
     );
 
-    /*
+    
     chair = new Model(
-        "Chair/Chair.obj",
-        "Chair/Chair.mtl"
+        "https://bigmouthinc.github.io/Chair.obj",
+        "https://bigmouthinc.github.io/Chair.mtl"
     );
-    */
+    
 
     let ambientProduct = mult(lightAmbient, materialAmbient);
     let diffuseProduct = mult(lightDiffuse, materialDiffuse);
@@ -386,6 +388,7 @@ function drawSkybox() {
 
     gl.uniform1i(gl.getUniformLocation(program, "isSkybox"), 1);
     gl.uniform1i(gl.getUniformLocation(program, "isFish"), 0);
+    gl.uniform1i(gl.getUniformLocation(program, "isChair"), 0)
     
     
     gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
@@ -399,13 +402,14 @@ function drawFish() {
 
     gl.uniform1i(gl.getUniformLocation(program, "isFish"), 1);
     gl.uniform1i(gl.getUniformLocation(program, "isSkybox"), 0);
+    gl.uniform1i(gl.getUniformLocation(program, "isChair"), 0)
 
     if (!fish.objParsed || !fish.mtlParsed) {
         setTimeout(() => drawFish(), 50);
         return;
     }
 
-    let modelMatrix = mult( rotateX(270), scalem(0.05, 0.05, 0.05));
+    let modelMatrix = mult(rotateY(180), mult(rotateX(270), mult(scalem(0.03, 0.03, 0.03), translate(0, 0, -40))));
 
     gl.uniformMatrix4fv(gl.getUniformLocation(program, "modelMatrix"), false, flatten(modelMatrix))
 
@@ -457,6 +461,49 @@ function drawFish() {
     gl.drawArrays(gl.TRIANGLES, 0, vertexCount);
 }
 
+function drawChair(){
+    gl.uniform1i(gl.getUniformLocation(program, "isFish"), 0);
+    gl.uniform1i(gl.getUniformLocation(program, "isSkybox"), 0);
+    gl.uniform1i(gl.getUniformLocation(program, "isChair"), 1);
+
+     if (!chair.objParsed || !chair.mtlParsed) {
+        setTimeout(() => drawChair(), 50);
+        return;
+    }
+
+    let modelMatrix = mult(
+    scalem(0.005, 0.005, 0.005),
+    translate(760, -400, 60)
+);
+
+    gl.uniformMatrix4fv(gl.getUniformLocation(program, "modelMatrix"), false, flatten(modelMatrix))
+
+    if (chairPos.length === 0) {
+
+        for (let face of chair.faces) {
+            for (let i = 0; i < face.faceVertices.length; i++) {
+                let vertex = face.faceVertices[i];
+                if (Math.abs(vertex[0]) > 2000 || Math.abs(vertex[1]) > 2000 || Math.abs(vertex[2]) > 2000)
+                    continue
+                chairPos.push(...vertex);
+            
+            }
+        }
+
+    }
+
+    const vertexCount = chairPos.length / 4;
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(chairPos), gl.STATIC_DRAW);
+    let vPos = gl.getAttribLocation(program, "vPosition");
+    gl.vertexAttribPointer(vPos, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(vPos);
+
+    gl.drawArrays(gl.TRIANGLES, 0, vertexCount);
+
+}
+
 let alpha = 0;
 
 function render() {
@@ -464,8 +511,8 @@ function render() {
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     
 
-    let eye = vec3(2 * Math.sin(alpha), 0.0, 2 * Math.cos(alpha));
-    let at = vec3(0.0, 0.0, 0.0);
+    let eye = vec3(2 * Math.sin(alpha), -1.0, 2 * Math.cos(alpha));
+    let at = vec3(0.0, -1.0, 0.0);
     let up = vec3(0.0, 1.0, 0.0);
 
     if (rotateScene)
@@ -478,6 +525,7 @@ function render() {
 
     //drawSphere();
     drawFish();
+    drawChair();
 
     drawSkybox();
 

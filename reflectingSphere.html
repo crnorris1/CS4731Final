@@ -14,13 +14,14 @@ varying vec2 fTexCoord;
 varying vec3 viewDirWorld, N_world;
 uniform bool isSkybox;
 uniform bool isFish;
+uniform bool isChair;
 attribute vec4 vColor;
 varying vec4 fColor;
 varying vec3 fPos;
 
 void main()
 {
-    if(!isSkybox && !isFish) {
+    if(!isSkybox && !isFish && !isChair) {
         // Calculate L
         vec4 nm = vNormal;
         nm.w = 1.0;     //To calculate the lighting vector, we need to convert the normal position
@@ -49,6 +50,10 @@ void main()
         fColor = vColor;
     }
 
+    else if(isChair){
+        gl_Position = projectionMatrix * cameraMatrix * modelMatrix * vPosition;
+    }
+
     else {
         fTexCoord = vTexCoord;
         fPos = vPosition.xyz; 
@@ -71,12 +76,13 @@ uniform samplerCube texMap;
 uniform sampler2D tex1;
 uniform bool isSkybox;
 uniform bool isFish;
+uniform bool isChair;
 varying vec4 fColor;
 varying vec3 fPos;
 
 void main()
 {
-    if(!isSkybox && !isFish) {
+    if(!isSkybox && !isFish && !isChair) {
         vec3 L = normalize(lightPosition.xyz - pos);
 
         //Specular
@@ -108,6 +114,10 @@ void main()
 
     else if (isFish) {
         gl_FragColor = texture2D(tex1, fTexCoord);
+    }
+
+    else if (isChair){
+        gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
     }
 
     else {
