@@ -16,6 +16,7 @@ uniform bool isSkybox;
 uniform bool isFish;
 attribute vec4 vColor;
 varying vec4 fColor;
+varying vec3 fPos;
 
 void main()
 {
@@ -50,8 +51,9 @@ void main()
 
     else {
         fTexCoord = vTexCoord;
+        fPos = vPosition.xyz; 
         gl_Position = projectionMatrix * cameraMatrix * modelMatrix * vPosition;
-    }
+}
 }
 </script>
 
@@ -70,6 +72,7 @@ uniform sampler2D tex1;
 uniform bool isSkybox;
 uniform bool isFish;
 varying vec4 fColor;
+varying vec3 fPos;
 
 void main()
 {
@@ -104,11 +107,11 @@ void main()
     }
 
     else if (isFish) {
-        gl_FragColor = fColor;
+        gl_FragColor = texture2D(tex1, fTexCoord);
     }
 
     else {
-        gl_FragColor = texture2D(tex1, fTexCoord);
+        gl_FragColor = textureCube(texMap, fPos);
     }
 
 }

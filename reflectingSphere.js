@@ -263,9 +263,11 @@ window.onload = function init() {
     let materialShininess = 20.0;
 
     // create model instances after shader program is ready
+
+    
     fish = new Model(
-        "Fish/12265_Fish_v1_L2.obj",
-        "Fish/12265_Fish_v1_L2.mtl"
+        "https://bigmouthinc.github.io/12265_Fish_v1_L2.obj",
+        "https://bigmouthinc.github.io/12265_Fish_v1_L2.mtl"
     );
 
     /*
@@ -292,11 +294,24 @@ window.onload = function init() {
     // Load the image
     let image = new Image();
     image.crossOrigin = "anonymous";
-    image.src = "images/Shanty_Wall_PG_Texture.png";
+    image.src = "https://bigmouthinc.github.io/Shanty_Wall_PG_Texture.png";
     image.onload = function() {
-        configureTexture(image);
         configureCubeMap(image);
     }
+
+    image.onerror = function() { console.error("Wall image failed to load!"); }
+
+    let checkFishMtl = setInterval(() => {
+    if (fish.mtlParsed && fish.imagePath) {
+        clearInterval(checkFishMtl);
+        let image2 = new Image();
+        image2.crossOrigin = "anonymous";
+        image2.src = fish.imagePath;
+        image2.onload = function() {
+            configureTexture(image2);
+        };
+    }
+}, 50);
 
     // Texture coordinates
     let tBuffer = gl.createBuffer();
@@ -332,14 +347,7 @@ window.onload = function init() {
 
     window.addEventListener("keydown", handleKeyPress);
 
-    tick();
-}
-
-function tick() {
-    if (fish.objParsed && fish.mtlParsed) {
-        render();
-    }
-    requestAnimationFrame(tick);
+    render();
 }
 
 
@@ -393,7 +401,7 @@ function drawFish() {
     gl.uniform1i(gl.getUniformLocation(program, "isSkybox"), 0);
 
     if (!fish.objParsed || !fish.mtlParsed) {
-        setTimeout(() => drawFish(gl, program, model), 50);
+        setTimeout(() => drawFish(), 50);
         return;
     }
 
@@ -403,7 +411,7 @@ function drawFish() {
 
     // Flatten face data
 
-    if (fishPos.length === 0 || fishColors.length === 0 || fishNormal.length === 0 || fishTexCoords === 0) {
+    if (fishPos.length === 0 && fishColors.length === 0 && fishNormal.length === 0 && fishTexCoords.length === 0) {
 
         for (let face of fish.faces) {
             let color = fish.diffuseMap.get(face.material) ?? [1, 1, 1, 1];
@@ -440,6 +448,12 @@ function drawFish() {
     gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(vColor);
 
+    let tBuf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, tBuf);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(fishTexCoords), gl.STATIC_DRAW);
+    gl.vertexAttribPointer(vTexCoord, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(vTexCoord);
+
     gl.drawArrays(gl.TRIANGLES, 0, vertexCount);
 }
 
@@ -465,13 +479,7 @@ function render() {
     //drawSphere();
     drawFish();
 
-gl.depthMask(false);
-gl.depthFunc(gl.LEQUAL);
-
-drawSkybox();
-
-gl.depthMask(true);
-gl.depthFunc(gl.LESS);
+    drawSkybox();
 
     requestAnimFrame(render);
 }
