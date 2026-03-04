@@ -406,10 +406,10 @@ function render() {
     gl.uniform1i(gl.getUniformLocation(program, "isShadow"), 1);
 
     //Vertical, against the far wall
-    //let modelShadowMatrix = mult(translate(0.0, -0.8, -1.95), shadowMatrix);
+    let modelShadowMatrix = mult(translate(0.0, -0.8, -1.95), shadowMatrix);
 
     //Horizontal, against the floor
-    let modelShadowMatrix = mult(mult(rotateX(90), translate(0.0, -0.7, 1.99)), shadowMatrix);
+    //let modelShadowMatrix = mult(mult(rotateX(90), translate(0.0, -0.7, 1.99)), shadowMatrix);
 
     //
     gl.uniformMatrix4fv( shadowMatrixLoc, false, flatten(modelShadowMatrix) );    
