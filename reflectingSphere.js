@@ -44,6 +44,8 @@ let cigarAnimate = false;
 let cigarPosAnimation = -.15;
 let cigarLeft = false;
 
+//let displayPointLight = true;
+
 function quad(a, b, c, d) {
     let minT = 0.0;
     let maxT = 1.0;
@@ -392,6 +394,10 @@ function handleKeyPress(e) {
                 displayShadow = !displayShadow
                 displaySpotlight = !displaySpotlight
             }
+            displayPointLight = displayShadow
+            break
+        case "p":
+            displayPointLight = !displayPointLight
             break
     }
 }
@@ -634,11 +640,15 @@ function render() {
     gl.uniformMatrix4fv(shadowMatrixLoc, false, flatten(mat4()))
     gl.uniform1i(gl.getUniformLocation(program, "displayShadow"), displayShadow);
     gl.uniform1i(gl.getUniformLocation(program, "displaySpotlight"), displaySpotlight);
+    //gl.uniform1i(gl.getUniformLocation(program, "displayPointLight"), displayPointLight);
     
     drawFish();
     drawChair();
     drawCigar();
     drawSkybox();
+
+    document.getElementById("spotlight").textContent = displaySpotlight;
+    document.getElementById("shadow").textContent = displayShadow;
 
     requestAnimFrame(render);
 }
