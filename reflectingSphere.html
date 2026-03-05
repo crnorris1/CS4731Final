@@ -76,8 +76,10 @@ void main()
         fPos = vPosition.xyz; 
         gl_Position = projectionMatrix * cameraMatrix * modelMatrix * vPosition;
     }
+
 }
 </script>
+
 <script id="fragment-shader" type="x-shader/x-fragment">
 
 precision mediump float;
@@ -105,6 +107,8 @@ uniform bool displaySpotlight;
 uniform vec4 lightDiffuse, lightSpecular, lightAmbient;
 uniform vec4 materialDiffuse, materialSpecular, materialAmbient;
 
+
+
 void main()
 {
 
@@ -120,17 +124,12 @@ void main()
             vec3 lightDir = normalize(vec3(-1.0, -1.0, -2.2));
 
             if (displaySpotlight){
-                if(dot(L, -lightDir) > .99)
+                if(dot(L, -lightDir) > .80)
                 {
                     vec3 R = (2.0 * dot(L, N) * N) - L;
                     diffuse = diffuseProduct * dot(L, N);
                     specular = specularProduct * pow(max(dot(V,R), 0.0), shininess);
                 }
-            }
-            else{
-                diffuse = lightDiffuse * materialDiffuse * dot(L, N);
-                vec3 R = (2.0 * dot(L, N) * N) - L;
-                specular = lightSpecular * materialSpecular * pow(max(dot(V, R), 0.0), shininess);
             }
 
             //Ambient
@@ -142,6 +141,7 @@ void main()
 
             vec3 refl = reflect(viewDirWorld, N_world);
             vec4 texColor = textureCube(texMap, refl);
+            
             gl_FragColor = texture2D(tex1, fTexCoord) * .5 + texColor * .5 + .5 * fColor;
         }
         else {
