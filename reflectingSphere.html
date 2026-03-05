@@ -105,11 +105,19 @@ uniform bool displaySpotlight;
 uniform vec4 lightDiffuse, lightSpecular, lightAmbient;
 uniform vec4 materialDiffuse, materialSpecular, materialAmbient;
 
+//uniform vec3 modelLightProduct;
+//uniform mat4 modelMatrix;
+
 void main()
 {
 
     if (isFish) {
         if (!isShadow){
+           // vec3 tempLightPos = lightPosition * modelMatrix;
+
+            //vec3 cameraToLight = (modelMatrix * lightPosition).xyz;
+
+            //vec3 L = normalize(cameraToLight - pos);
             vec3 L = normalize(lightPosition.xyz - pos);
 
             vec4 diffuse = vec4(0.0, 0.0, 0.0, 1.0);
@@ -120,17 +128,12 @@ void main()
             vec3 lightDir = normalize(vec3(-1.0, -1.0, -2.2));
 
             if (displaySpotlight){
-                if(dot(L, -lightDir) > .99)
+                if(dot(L, -lightDir) > .80)
                 {
                     vec3 R = (2.0 * dot(L, N) * N) - L;
                     diffuse = diffuseProduct * dot(L, N);
                     specular = specularProduct * pow(max(dot(V,R), 0.0), shininess);
                 }
-            }
-            else{
-                diffuse = lightDiffuse * materialDiffuse * dot(L, N);
-                vec3 R = (2.0 * dot(L, N) * N) - L;
-                specular = lightSpecular * materialSpecular * pow(max(dot(V, R), 0.0), shininess);
             }
 
             //Ambient
@@ -182,11 +185,12 @@ Oops ... your browser doesn't support the HTML5 canvas element
 </canvas>
 <br/>
 <h2>Fish in the Chair: A Simulation</h2>
-<t>Use A and D to rotate about the fish</t><br/>
-<t>Use R to toggle the automatic camera rotation</t><br/>
-<t>Use Q to rotate the fish</t><br/>
-<t>Use X to toggle the spotlight</t><br/>
-<t>Use S to toggle the shadow</t>
-<t>Use F to allow the fish to take a puff of his cigar</t>
+<t>Use A and D to rotate the camera about the fish</t><br/>
+<t>Use L to toggle the lighting</t><br/>
+<t>Use F to allow the fish to take a puff of his cigar</t><br/>
+<t>Use R to rotate the CAMERA</t><br/>
+<t>Use Q to rotate the FISH</t><br/>
+<t>Use X to toggle the spotlight individually</t><br/>
+<t>Use S to toggle the shadow individually</t><br/>
 </body>
 </html>

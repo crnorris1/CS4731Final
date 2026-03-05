@@ -275,6 +275,8 @@ window.onload = function init() {
     gl.uniform4fv( gl.getUniformLocation(program,"diffuseProduct"), flatten(diffuseProduct) );
     gl.uniform4fv( gl.getUniformLocation(program,"specularProduct"), flatten(specularProduct) );
 
+
+
     gl.uniform4fv( gl.getUniformLocation(program,"lightPosition"), flatten(lightPosition) );
     gl.uniform1f( gl.getUniformLocation(program, "shininess"), materialShininess );
 
@@ -334,6 +336,9 @@ window.onload = function init() {
     let modelMatrixLoc = gl.getUniformLocation( program, "modelMatrix" );
     gl.uniformMatrix4fv(modelMatrixLoc, false, flatten(modelMatrix) );
 
+    let modelLightProduct = mult(vec3(modelMatrix[0],modelMatrix[1],modelMatrix[2]), vec3(lightPosition[0], lightPosition[1], lightPosition[2]))
+    gl.uniform4fv( gl.getUniformLocation(program,"modelLightProduct"), flatten(modelLightProduct) );
+
     shadowMatrixLoc = gl.getUniformLocation( program, "shadowMatrix" );
 
     window.addEventListener("keydown", handleKeyPress);
@@ -341,29 +346,52 @@ window.onload = function init() {
     render();
 }
 
-
+//Key presses
 function handleKeyPress(e) {
     switch(e.key) {
+        //Rotates the camera around the scene
         case "r":
             rotateScene = !rotateScene
             break
+        //Move the camera left
         case "a":
             alpha-=0.05
             break
+        //Move the camera right
         case "d":
             alpha+=0.05
             break
+        //Toggle the cast shadow individually
         case "s":
             displayShadow = !displayShadow
             break
+        //Toggle the spotlight individually
         case "x":
             displaySpotlight = !displaySpotlight
             break
+        //Toggle fish rotation
         case "q":
             fishRotation = !fishRotation
             break
+        //Toggle cigar animation
         case "f":
             cigarAnimate = !cigarAnimate
+            break
+        //Toggle lighting all together
+        case "l":
+            if (displayShadow && displaySpotlight){
+                displayShadow = false
+                displaySpotlight = false
+            }
+            else if (!displayShadow && !displaySpotlight){
+                displayShadow = true
+                displaySpotlight = true
+            }
+            else{
+                displayShadow = displaySpotlight
+                displayShadow = !displayShadow
+                displaySpotlight = !displaySpotlight
+            }
             break
     }
 }
@@ -517,6 +545,9 @@ function drawCigar(){
                 cigarLeft = !cigarLeft
         }
     }
+    else{
+        cigarPosAnimation = -.15
+    }
 
     let modelMatrix = mult(rotateZ(90), mult(scalem(5, 5, 5), translate(-.235, cigarPosAnimation, 0)));
 
@@ -564,6 +595,7 @@ function animateCigar(){
 }
 
 function render() {
+    console.log(displaySpotlight)
 
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     //Camera
