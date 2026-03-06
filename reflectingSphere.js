@@ -2,6 +2,7 @@ let canvas;
 let gl;
 let program;
 
+//Points for the objects in the scene
 let pointsArray = [];
 let normalsArray = [];
 let texCoordsArray = [];
@@ -9,6 +10,7 @@ let texCoordsArray = [];
 let pointsArraySphere = [];
 let pointsArrayCube = [];
 
+//Specific OBJ object coords
 let fishPos = [];
 let fishNormal = [];
 let fishTexCoords = [];
@@ -23,28 +25,27 @@ let fish;
 let chair;
 let cigar;
 
+//Matrixes
 let cameraMatrixLoc, cameraInverseMatrixLoc, shadowMatrixLoc;
 let vTexCoord, vNormal, vPosition;
 
+//Shadow matrix for the fish's shadow
 let vBuffer
 let shadowMatrix;
 let black = vec4(0.0, 0.0, 0.0, 1.0);
 
+//The rotation of the camera
 let alpha = 0;
+
+//Different toggles and helper variables to animate and move the scene
 let displayShadow = true;
-
 let displaySpotlight = true;
-
 let rotateScene = false;
-
 let fishRotation = false;
 let fishAngle = 180;
-
 let cigarAnimate = false;
 let cigarPosAnimation = -.15;
 let cigarLeft = false;
-
-//let displayPointLight = true;
 
 function quad(a, b, c, d) {
     let minT = 0.0;
@@ -588,22 +589,9 @@ function drawCigar(){
 
 }
 
-function animateCigar(){
-    for (let x = 0; x < 2; x++){
-        for (let i = -.15; i > 0; i-=0.01){
-            cigarPosAnimation = i
-        }
-
-       /* for (let i = -.5; i > -.15; i+=0.01){
-            cigarPosAnimation = i
-        }*/
-    }
-}
-
 function render() {
-    console.log(displaySpotlight)
-
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    
     //Camera
     if (rotateScene)
         alpha += 0.005;
@@ -612,12 +600,13 @@ function render() {
         fishAngle += 5
     }
 
-
+    //Camera matrix
     let eye = vec3(2 * Math.sin(alpha), -1.0, 2 * Math.cos(alpha));
     let at = vec3(0.0, -1.0, 0.0);
     let up = vec3(0.0, 1.0, 0.0);
     let cameraMatrix = lookAt(eye, at, up);
 
+    //Pushes the camera matrix, and the inverse camera matrix for reflection purposes
     gl.uniformMatrix4fv(cameraMatrixLoc, false, flatten(cameraMatrix) );
     gl.uniformMatrix4fv(cameraInverseMatrixLoc, false, flatten(inverse(cameraMatrix)) );
     
@@ -628,13 +617,10 @@ function render() {
 
     //Vertical, against the far wall
     let modelShadowMatrix = mult(translate(0.0, -0.4, -1.95), shadowMatrix);
-    
     gl.uniformMatrix4fv( shadowMatrixLoc, false, flatten(modelShadowMatrix) );    
-    
 
+    //Draws the fish's shadow
     drawFish();
-    //drawChair();
-
 
     gl.uniform1i(gl.getUniformLocation(program, "isShadow"), 0)
     gl.uniformMatrix4fv(shadowMatrixLoc, false, flatten(mat4()))
@@ -642,11 +628,13 @@ function render() {
     gl.uniform1i(gl.getUniformLocation(program, "displaySpotlight"), displaySpotlight);
     //gl.uniform1i(gl.getUniformLocation(program, "displayPointLight"), displayPointLight);
     
+    //Draws everything else without a shadow
     drawFish();
     drawChair();
     drawCigar();
     drawSkybox();
 
+    //For text purposes in the html file
     document.getElementById("spotlight").textContent = displaySpotlight;
     document.getElementById("shadow").textContent = displayShadow;
 
