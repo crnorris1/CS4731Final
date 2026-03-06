@@ -149,6 +149,7 @@ function configureCubeMap(image) {
     gl.uniform1i(gl.getUniformLocation(program, "texMap"), 1);
 }
 
+// Configure default texture on fish
 function configureDefaultTexture() {
 
     let tex = gl.createTexture();
@@ -176,6 +177,7 @@ function configureDefaultTexture() {
     gl.uniform1i(gl.getUniformLocation(program, "tex1"), 0);
 }
 
+// Configure Texture on Fish
 function configureTexture(image) {
 
     let tex = gl.createTexture();
@@ -242,9 +244,7 @@ window.onload = function init() {
     let materialSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
     let materialShininess = 20.0;
 
-    // create model instances after shader program is ready
-
-    
+    // Create model instances 
     fish = new Model(
         "https://bigmouthinc.github.io/12265_Fish_v1_L2.obj",
         "https://bigmouthinc.github.io/12265_Fish_v1_L2.mtl"
@@ -262,6 +262,7 @@ window.onload = function init() {
     )
     
 
+    // Set and push lighting
     let ambientProduct = mult(lightAmbient, materialAmbient);
     let diffuseProduct = mult(lightDiffuse, materialDiffuse);
     let specularProduct = mult(lightSpecular, materialSpecular);
@@ -272,13 +273,9 @@ window.onload = function init() {
     gl.uniform4fv(gl.getUniformLocation(program, "materialSpecular"), flatten(materialSpecular));
     gl.uniform4fv(gl.getUniformLocation(program, "lightAmbient"), flatten(lightAmbient));
     gl.uniform4fv(gl.getUniformLocation(program, "materialAmbient"), flatten(materialAmbient));
-
     gl.uniform4fv( gl.getUniformLocation(program,"ambientProduct"), flatten(ambientProduct) );
     gl.uniform4fv( gl.getUniformLocation(program,"diffuseProduct"), flatten(diffuseProduct) );
     gl.uniform4fv( gl.getUniformLocation(program,"specularProduct"), flatten(specularProduct) );
-
-
-
     gl.uniform4fv( gl.getUniformLocation(program,"lightPosition"), flatten(lightPosition) );
     gl.uniform1f( gl.getUniformLocation(program, "shininess"), materialShininess );
 
@@ -286,7 +283,7 @@ window.onload = function init() {
     configureDefaultTexture();
     configureDefaultCubeMap();
 
-    // Load the image
+    // Load the skybox image
     let image = new Image();
     image.crossOrigin = "anonymous";
     image.src = "https://bigmouthinc.github.io/Shanty_Wall_PG_Texture.png";
@@ -294,6 +291,7 @@ window.onload = function init() {
         configureCubeMap(image);
     }
 
+    // If the fish MTL is parsed, set the texture
     let checkFishMtl = setInterval(() => {
     if (fish.mtlParsed && fish.imagePath) {
         clearInterval(checkFishMtl);
@@ -424,24 +422,23 @@ function drawSkybox() {
 }
 
 function drawFish() {
-    // Wait for parsing to finish
 
     gl.uniform1i(gl.getUniformLocation(program, "isFish"), 1);
     gl.uniform1i(gl.getUniformLocation(program, "isSkybox"), 0);
     gl.uniform1i(gl.getUniformLocation(program, "isChair"), 0)
     gl.uniform1i(gl.getUniformLocation(program, "isCigar"), 0)
 
+    // Wait for parsing to finish
     if (!fish.objParsed || !fish.mtlParsed) {
         setTimeout(() => drawFish(), 50);
         return;
     }
 
+    // Get into proper spot of screen
     let modelMatrix = mult(rotateY(fishAngle), mult(rotateX(270), mult(scalem(0.03, 0.03, 0.03), translate(0, 0, -40))));
-
     gl.uniformMatrix4fv(gl.getUniformLocation(program, "modelMatrix"), false, flatten(modelMatrix))
 
-    // Flatten face data
-
+    // Gather OBJ data if it hasn't been done
     if (fishPos.length === 0 && fishColors.length === 0 && fishNormal.length === 0 && fishTexCoords.length === 0) {
 
         for (let face of fish.faces) {
@@ -479,6 +476,8 @@ function drawFish() {
     gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(vColor);
 
+
+    // Upload and bind tex bufer
     let tBuf = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, tBuf);
     gl.bufferData(gl.ARRAY_BUFFER, flatten(fishTexCoords), gl.STATIC_DRAW);
@@ -494,15 +493,17 @@ function drawChair(){
     gl.uniform1i(gl.getUniformLocation(program, "isChair"), 1);
     gl.uniform1i(gl.getUniformLocation(program, "isCigar"), 0)
 
+    // Wait for parse to finsih
      if (!chair.objParsed || !chair.mtlParsed) {
         setTimeout(() => drawChair(), 50);
         return;
     }
 
+    // Get into proper part of screen
     let modelMatrix = mult(scalem(0.005, 0.005, 0.005), translate(760, -400, 60));
-
     gl.uniformMatrix4fv(gl.getUniformLocation(program, "modelMatrix"), false, flatten(modelMatrix))
 
+    // Get OBJ data if it hasn't been done
     if (chairPos.length === 0 ) {
 
         for (let face of chair.faces) {
@@ -518,6 +519,7 @@ function drawChair(){
 
     const vertexCount = chairPos.length / 4;
 
+    // Set and bind position buffer
     gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, flatten(chairPos), gl.STATIC_DRAW);
     let vPos = gl.getAttribLocation(program, "vPosition");
@@ -534,11 +536,13 @@ function drawCigar(){
     gl.uniform1i(gl.getUniformLocation(program, "isChair"), 0)
     gl.uniform1i(gl.getUniformLocation(program, "isCigar"), 1)
 
+    // Wait for parse to finish
     if (!cigar.objParsed || !cigar.mtlParsed) {
         setTimeout(() => drawCigar(), 50);
         return;
     }
 
+    // If cigar is animating, change position
     if (cigarAnimate){
         if (cigarLeft){
             cigarPosAnimation += .01
@@ -555,12 +559,12 @@ function drawCigar(){
         cigarPosAnimation = -.15
     }
 
+    // Get to proper spot of the screen
     let modelMatrix = mult(rotateZ(90), mult(scalem(5, 5, 5), translate(-.235, cigarPosAnimation, 0)));
-
     gl.uniformMatrix4fv(gl.getUniformLocation(program, "modelMatrix"), false, flatten(modelMatrix))
 
+    // If OBJ data hasn't been collected, set data
     if (cigarPos.length === 0){
-
         for (let face of cigar.faces){
             for (let i = 0; i < face.faceVertices.length; i++){
                 cigarPos.push(...face.faceVertices[i])
@@ -571,6 +575,7 @@ function drawCigar(){
 
     const vertexCount = cigarPos.length / 4;
 
+    // Upload and bind position buffer
     gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, flatten(cigarPos), gl.STATIC_DRAW);
     let vPos = gl.getAttribLocation(program, "vPosition");
