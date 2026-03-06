@@ -103,10 +103,10 @@ uniform bool isShadow;
 uniform bool isCigar;
 uniform bool displayShadow;
 uniform bool displaySpotlight;
+uniform bool displayPointLight;
 
 uniform vec4 lightDiffuse, lightSpecular, lightAmbient;
 uniform vec4 materialDiffuse, materialSpecular, materialAmbient;
-
 
 
 void main()
@@ -114,6 +114,11 @@ void main()
 
     if (isFish) {
         if (!isShadow){
+           // vec3 tempLightPos = lightPosition * modelMatrix;
+
+            //vec3 cameraToLight = (modelMatrix * lightPosition).xyz;
+
+            //vec3 L = normalize(cameraToLight - pos);
             vec3 L = normalize(lightPosition.xyz - pos);
 
             vec4 diffuse = vec4(0.0, 0.0, 0.0, 1.0);
@@ -123,6 +128,7 @@ void main()
 
             vec3 lightDir = normalize(vec3(-1.0, -1.0, -2.2));
 
+            //If spotlight is on...
             if (displaySpotlight){
                 if(dot(L, -lightDir) > .80)
                 {
@@ -181,12 +187,21 @@ void main()
 Oops ... your browser doesn't support the HTML5 canvas element
 </canvas>
 <br/>
-<h2>Fish in the Chair: A Simulation</h2>
-<t>Use A and D to rotate about the fish</t><br/>
-<t>Use R to toggle the automatic camera rotation</t><br/>
-<t>Use Q to rotate the fish</t><br/>
-<t>Use X to toggle the spotlight</t><br/>
-<t>Use S to toggle the shadow</t>
-<t>Use F to allow the fish to take a puff of his cigar</t>
+<b>Fish in the Chair: A Simulation</b><br/>
+<div style="color: rgb(0, 0, 0); padding: 10px;">
+    <t>Use [A] and [D] to rotate the camera about the fish</t><br/>
+    <t>Use [R] to toggle camera rotation</t><br/>
+</div>
+<div style="color: rgb(0, 0, 0); padding: 10px;">
+    Use [L] to toggle lighting<br/>
+    [X] Spotlight On?: <span id="spotlight"></span><br/>
+    [S] Shadows On?: <span id="shadow"></span>
+</div>
+
+<div style="color: rgb(0, 0, 0); padding: 10px;">
+    <t>Use [F] to allow the fish to take a puff of his cigar</t><br/>
+    <t>Use [Q] to rotate the FISH</t><br/>
+</div>
+
 </body>
 </html>
