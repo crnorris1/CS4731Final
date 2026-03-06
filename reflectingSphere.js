@@ -631,8 +631,7 @@ function render() {
     gl.uniformMatrix4fv(shadowMatrixLoc, false, flatten(mat4()))
     gl.uniform1i(gl.getUniformLocation(program, "displayShadow"), displayShadow);
     gl.uniform1i(gl.getUniformLocation(program, "displaySpotlight"), displaySpotlight);
-    //gl.uniform1i(gl.getUniformLocation(program, "displayPointLight"), displayPointLight);
-    
+        
     //Draws everything else without a shadow
     drawFish();
     drawChair();
